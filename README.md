@@ -51,7 +51,10 @@ PD="$HOME/.local/share/proxydoctor/1.0.0b1/bin/proxydoctor"
 
 ## 三网、路由和 BGP
 
-以下是新增公测能力，尚待本轮 Linux 与海外 VPS 实测验收。
+实测覆盖以随包提供、SHA256 一致的验收报告为准；没有海外 VPS 验收证据。
+
+ICMP/TCP 权限取决于系统 traceroute。权限不足显示 `PERMISSION_DENIED`，不自动提权。
+可选 `--geo` 提供跳点 ASN、运营商、来源与时间；地理位置是数据库推测，最多查询 12 个公网跳点，遇限额停止。窄交互终端面板会适配窗口宽度。
 
 ```bash
 # 固定候选的小流量探测，不运行带宽测试

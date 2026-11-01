@@ -21,7 +21,15 @@ class ScanSession:
         if not self.store.checkpoint(self.report):self.failed=True
 
     def __enter__(self):
-        self.checkpoint()
+        try:
+            self.checkpoint()
+        except BaseException:
+            # Context managers do not receive __exit__ when __enter__ raises.
+            # Preserve a cancellation snapshot and close the journal even if a
+            # signal arrives during the first durable checkpoint.
+            import sys
+            self.__exit__(*sys.exc_info())
+            raise
         return self
 
     def __exit__(self,kind,value,traceback):

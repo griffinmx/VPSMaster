@@ -1,3 +1,4 @@
+> 最终加固：路由错误分类、跳点 ASN/运营商来源、窄终端适配已有回归。环境覆盖与结论以同 SHA256 的 FINAL_TEST_REPORT.md 为准。完整大陆三网、海外 VPS、ARM、新装 22 Server 尚未完成。
 > 历史 Alpha/问题状态记录：当前 1.0 公测候选请以 CURRENT_STATUS.md 和 PUBLIC_BETA_CHANGE_REPORT.md 为准；新增代码不等于已完成实测。
 
 > 最新Alpha优先项状态见 [ALPHA_TASK_STATUS.md](ALPHA_TASK_STATUS.md)。以下包含本轮前历史统计，不能作为最新发布验收结论。

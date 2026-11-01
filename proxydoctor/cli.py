@@ -181,8 +181,9 @@ def _main():
                 from .routes import trace_method,summarize_hops
                 data.update(target=str(target),method=args.method,hops=[])
                 code=trace_method(str(target),lambda line,**kw:out.line(line),method=args.method,tcp_port=args.tcp_port,
-                                  hops=args.max_hops,geo=args.geo,lang=lang,records=data['hops'],on_result=scan.checkpoint)
-                data.update(state='reached' if code==0 else 'incomplete',statistics=summarize_hops(data['hops']))
+                                  hops=args.max_hops,geo=args.geo,lang=lang,records=data['hops'],on_result=scan.checkpoint,summary=data)
+                data.update(statistics=summarize_hops(data['hops']))
+                out.row(st('追踪结果','Trace result'),data['state']+(' / '+data['error_code'] if data.get('error_code') else ''),'ok' if code==0 else 'unknown')
             elif args.command=='return-route':
                 from .carriers import return_routes
                 out.line(st('方向：本机 → 中国目标；不包含中国侧到本机的探测','Direction: this host → China targets; reverse probes not included'),'unknown')

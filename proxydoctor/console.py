@@ -3,6 +3,9 @@ import os
 import re
 import sys
 import unicodedata
+import shutil
+
+_UNSAFE = re.compile(r'[\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]')
 
 # ANSI SGR codes used by the themed renderer.
 _RESET = '\033[0m'
@@ -17,7 +20,7 @@ _BG = {'b_green': '42', 'b_yellow': '43', 'b_red': '41', 'b_cyan': '46'}
 
 
 def clean(value):
-    return re.sub(r'[\x00-\x1f\x7f-\x9f]', ' ', str(value)).strip()
+    return _UNSAFE.sub(' ', str(value)).strip()
 
 
 def _cwidth(ch):
@@ -80,7 +83,7 @@ class Console:
 
     # ---- basic paint ----
     def paint(self, value, status='ok', preserve_space=False):
-        value = re.sub(r'[\x00-\x1f\x7f-\x9f]', ' ', str(value)) if preserve_space else clean(value)
+        value = _UNSAFE.sub(' ', str(value)) if preserve_space else clean(value)
         if not self.enabled:
             return value
         code = {'ok': '32', 'bad': '31', 'unknown': '33', 'title': '36', 'muted': '90', 'warn': '33'}[status]
@@ -126,6 +129,7 @@ class Console:
 
     def banner(self, text):
         """A large ASCII-art title line, e.g. PROXYDOCTOR."""
+        text = clean(text)
         if not self.enabled:
             print(text, flush=True)
             return
@@ -157,6 +161,8 @@ class Console:
         """A compact overview; wrap by terminal columns, including CJK text."""
         if not 40 <= width <= 120:
             raise ValueError('Panel width must be 40..120')
+        if sys.stdout.isatty():
+            width = min(width, max(12, shutil.get_terminal_size().columns))
         if self._framed:
             self.frame_line(title, 'title')
             for label, value, status in rows:
@@ -201,6 +207,8 @@ class Console:
         """Top edge + centered title + optional subtitle, all inside the box."""
         if not 40 <= box_w <= 118:
             raise ValueError('Frame inner width must be 40..118')
+        if sys.stdout.isatty():
+            box_w = min(box_w, max(10, shutil.get_terminal_size().columns - 2))
         cw = self._cw
         self._box_w = box_w
         self._framed = True

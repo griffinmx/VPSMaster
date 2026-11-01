@@ -39,7 +39,7 @@ def local_command(argv, timeout=4):
             _active.add(process)
             if _cancelled.is_set():process.kill()
         try:
-            output, _ = process.communicate(timeout=timeout)
+            output, errors = process.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
             process.kill();process.communicate()
             return None, '', 'COMMAND_TIMEOUT'
@@ -50,7 +50,16 @@ def local_command(argv, timeout=4):
             with _lock:_active.discard(process)
         if len(output)>16384:
             return None, '', 'COMMAND_OUTPUT_LIMIT'
-        return process.returncode, output, None
+        message=errors.lower()
+        error=None
+        if process.returncode:
+            if any(token in message for token in ('operation not permitted','permission denied','not enough privileges')):
+                error='PERMISSION_DENIED'
+            elif any(token in message for token in ('network is unreachable','network unreachable','no route to host')):
+                error='NETWORK_UNREACHABLE'
+            elif 'not supported' in message:
+                error='PROTOCOL_UNSUPPORTED'
+        return process.returncode, output, error
 
 
 def invoke(action,options,timeout=20):

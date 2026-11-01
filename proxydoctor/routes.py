@@ -7,8 +7,21 @@ import time
 import select
 import re
 import shutil
+import errno
 from .geo import GeoLocator
 from .console import clean
+
+
+def finish_trace(summary,state,error=None):
+    if summary is not None:summary.update(state=state,error_code=error)
+    return 0 if state=='reached' else 1
+
+
+def render_hop(row):
+    address=row.get('ip') or '*'
+    rtt=f"{row['latency_ms']:.3f} ms" if row.get('latency_ms') is not None else '---'
+    asn='AS'+str(row['asn']) if row.get('asn') else 'AS?'
+    return f"{row['hop']:2d}  {address:<39} {rtt:>12}  {clean(row.get('location') or '---')}  {asn} {clean(row.get('operator') or '---')} [{row['state']}]"
 
 
 def parse_traceroute_hop(text, ttl, target):
@@ -33,10 +46,10 @@ def parse_traceroute_hop(text, ttl, target):
 
 
 def trace_method(target, emit=print, *, method='udp', tcp_port=443, hops=30, wait=1.0,
-                 lang='zh', geo=True, records=None, on_result=None, deadline=None):
+                 lang='zh', geo=True, records=None, on_result=None, deadline=None,summary=None):
     """Native UDP or fixed-system Linux traceroute ICMP/TCP, without elevation."""
     if method=='udp':
-        return trace(target,emit,hops,wait,lang,geo,records,on_result,deadline)
+        return trace(target,emit,hops,wait,lang,geo,records,on_result,deadline,summary)
     if method not in ('icmp','tcp') or not 1<=hops<=64 or not 1<=tcp_port<=65535 or not 0<wait<=10:
         raise ValueError('Invalid trace method or limits')
     address=ipaddress.ip_address(target)
@@ -44,13 +57,13 @@ def trace_method(target, emit=print, *, method='udp', tcp_port=443, hops=30, wai
     if not executable:
         emit('TRACEROUTE_DEPENDENCY_MISSING · ICMP/TCP 需要系统 traceroute' if lang=='zh' else
              'TRACEROUTE_DEPENDENCY_MISSING · ICMP/TCP require system traceroute',flush=True)
-        return 1
+        return finish_trace(summary,'dependency_missing','TRACEROUTE_DEPENDENCY_MISSING')
     from .worker import local_command
     deadline=deadline if deadline is not None else time.monotonic()+90
     locator=GeoLocator(lang,enabled=geo)
     for ttl in range(1,hops+1):
         remaining=deadline-time.monotonic()
-        if remaining<=0:return 1
+        if remaining<=0:return finish_trace(summary,'partial' if records else 'not_reached','TIME_BUDGET_EXHAUSTED')
         argv=[executable,'-6' if address.version==6 else '-4','-n','-N','1','-q','1',
               '-f',str(ttl),'-m',str(ttl),'-w',str(wait),'-I' if method=='icmp' else '-T']
         if method=='tcp':argv+=['-p',str(tcp_port)]
@@ -61,19 +74,19 @@ def trace_method(target, emit=print, *, method='udp', tcp_port=443, hops=30, wai
         row=parse_traceroute_hop(text,ttl,address)
         if row is None:
             emit(error or 'TRACEROUTE_FAILED_OR_PERMISSION_DENIED',flush=True)
-            return 1
+            return finish_trace(summary,'permission_denied' if error=='PERMISSION_DENIED' else 'network_unavailable' if error=='NETWORK_UNREACHABLE' else 'unknown',error or 'TRACEROUTE_OUTPUT_INVALID')
         row.update(method=method,statistics_scope='one_probe_this_ttl_not_forwarding_loss')
-        row['location']=clean(locator.lookup(row['ip'])) if row['ip'] else None
+        row.update(locator.details(row['ip']) if row['ip'] else {'location':None,'asn':None,'operator':None,'source':None})
         row['response_loss_percent']=0.0 if row['responses'] else 100.0
         if records is not None:records.append(row)
-        emit(f"{ttl:2d}  {row['ip'] or '*':<39} {str(row['latency_ms']) if row['latency_ms'] is not None else '---':>8} ms  {row['location'] or '---'}",flush=True)
+        emit(render_hop(row),flush=True)
         if on_result:on_result()
-        if row['state']=='reached':return 0
-        if code or row['state']=='unreachable':return 1
-    return 1
+        if row['state']=='reached':return finish_trace(summary,'reached')
+        if code or row['state']=='unreachable':return finish_trace(summary,'not_reached',error or 'ICMP_UNREACHABLE')
+    return finish_trace(summary,'partial' if records and any(r.get('responses') for r in records) else 'not_reached','MAX_HOPS_REACHED')
 
 
-def trace(target, emit=print, hops=30, wait=1.0, lang='zh', geo=True, records=None, on_result=None, deadline=None):
+def trace(target, emit=print, hops=30, wait=1.0, lang='zh', geo=True, records=None, on_result=None, deadline=None,summary=None):
     if not 1<=hops<=64 or not 0<wait<=10: raise ValueError('Invalid trace limits')
     address=ipaddress.ip_address(target)
     deadline=deadline if deadline is not None else time.monotonic()+90
@@ -81,7 +94,7 @@ def trace(target, emit=print, hops=30, wait=1.0, lang='zh', geo=True, records=No
     zh=lang=='zh';v6=address.version==6
     if sys.platform != 'linux':
         emit('当前平台无法进行原生追踪' if zh else 'Native trace unavailable on this platform',flush=True)
-        return 1
+        return finish_trace(summary,'unsupported','UNSUPPORTED_PLATFORM')
     family=socket.AF_INET6 if v6 else socket.AF_INET
     protocol=socket.IPPROTO_IPV6 if v6 else socket.IPPROTO_IP
     recverr=25 if v6 else 11
@@ -92,7 +105,7 @@ def trace(target, emit=print, hops=30, wait=1.0, lang='zh', geo=True, records=No
             for ttl in range(1,hops+1):
                 if time.monotonic()>=deadline:
                     emit('Route observation time budget exhausted (90s)',flush=True)
-                    return 1
+                    return finish_trace(summary,'partial' if records else 'not_reached','TIME_BUDGET_EXHAUSTED')
                 sock.setsockopt(protocol,socket.IPV6_UNICAST_HOPS if v6 else socket.IP_TTL,ttl)
                 start=time.monotonic()
                 endpoint=(str(address),33434+ttl,0,0) if v6 else (str(address),33434+ttl)
@@ -115,27 +128,31 @@ def trace(target, emit=print, hops=30, wait=1.0, lang='zh', geo=True, records=No
                         if icmp_type not in ((1,3) if v6 else (3,11)): continue
                         hop=socket.inet_ntop(family,data[24:40] if v6 else data[20:24])
                         elapsed=(time.monotonic()-start)*1000
-                        location=clean(locator.lookup(hop))
-                        emit(f'{ttl:2d}  {hop:<39} {elapsed:8.1f} ms  {location}  [reply 1/1; timeout 0/1]',flush=True)
+                        detail=locator.details(hop)
+                        location=clean(detail['location'])
                         reached=(icmp_type==1 and icmp_code==4 if v6 else icmp_type==3 and icmp_code==3) and ipaddress.ip_address(hop)==address
-                        if records is not None: records.append({'hop':ttl,'ip':hop,'latency_ms':round(elapsed,3),'location':location,
+                        row={'hop':ttl,'ip':hop,'latency_ms':round(elapsed,3),'location':location,
                                                                 'probes_sent':1,'responses':1,'response_loss_percent':0.0,'statistics_scope':'one_probe_this_ttl_not_forwarding_loss',
-                                                                'icmp_type':icmp_type,'icmp_code':icmp_code,'state':'reached' if reached else 'reply'})
+                                                                'icmp_type':icmp_type,'icmp_code':icmp_code,'state':'reached' if reached else 'reply',**detail}
+                        if records is not None:records.append(row)
+                        emit(render_hop(row),flush=True)
                         found=True
                         if on_result is not None: on_result()
-                        if reached: return 0
+                        if reached: return finish_trace(summary,'reached')
                         if icmp_type==(1 if v6 else 3):
                             emit(f'  ICMP 不可达（代码 {icmp_code}）' if zh else f'  ICMP unreachable (code {icmp_code})',flush=True)
-                            return 1
+                            return finish_trace(summary,'not_reached','ICMP_UNREACHABLE')
                     if found: break
                 if not found:
                     emit(f'{ttl:2d}  {"*":<39} {"---":>8}     ---  [reply 0/1; timeout 1/1]',flush=True)
                     if records is not None: records.append({'hop':ttl,'ip':None,'latency_ms':None,'location':None,'state':'timeout',
                                                            'probes_sent':1,'responses':0,'response_loss_percent':100.0,'statistics_scope':'one_probe_this_ttl_not_forwarding_loss'})
                     if on_result is not None: on_result()
-    except (OSError,AttributeError):
+    except (OSError,AttributeError) as error:
         emit('原生 UDP 追踪不可用或未收到允许的响应' if zh else 'Native UDP trace unavailable or blocked',flush=True)
-    return 1
+        code='PERMISSION_DENIED' if getattr(error,'errno',None) in (errno.EPERM,errno.EACCES) else 'NETWORK_UNREACHABLE' if getattr(error,'errno',None) in (errno.ENETUNREACH,errno.EHOSTUNREACH) else 'UDP_TRACE_UNAVAILABLE'
+        return finish_trace(summary,'permission_denied' if code=='PERMISSION_DENIED' else 'network_unavailable' if code=='NETWORK_UNREACHABLE' else 'unknown',code)
+    return finish_trace(summary,'partial' if records and any(r.get('responses') for r in records) else 'not_reached','MAX_HOPS_REACHED')
 
 
 def summarize_hops(records):

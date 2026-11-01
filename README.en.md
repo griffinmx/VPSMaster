@@ -6,6 +6,12 @@ Read-only Python VPS diagnostics; internal package/command: proxydoctor. **Publi
 
 ## Install
 
+Final hardening: route outcomes retain permission/dependency/network errors. ICMP/TCP
+permissions depend on system traceroute; no automatic elevation. Optional `--geo`
+adds estimated location, ASN/operator, provider and time, capped at 12 public lookups.
+Interactive frames adapt to narrow terminals. Exact acceptance scope is recorded in
+the separate report matching the ZIP SHA256; overseas VPS results are not implied.
+
 Requires Linux, Python 3.10+ and standard-library venv. Target: Ubuntu 22.04 and newer. No Python runtime dependencies, sudo, pip or automatic system package installation. Check the ZIP against a trusted SHA256 digest and review install.py first; Python extraction works without unzip.
 
 ```bash

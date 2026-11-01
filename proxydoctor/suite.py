@@ -195,14 +195,17 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
                 deadline=time.monotonic()+90
                 replies=0;attempts=0
                 route['probe_rounds_requested']=route_probes
+                route['probe_outcomes']=[]
                 for number in range(route_probes):
                     if time.monotonic()>=deadline:break
                     out.line(tr(f'路由探测 {number+1}/{route_probes}',f'Route probe {number+1}/{route_probes}'))
-                    options=dict(emit=route_output,hops=max_hops,lang=lang,geo=geo and number==0,
+                    outcome={}
+                    options=dict(emit=route_output,hops=max_hops,lang=lang,geo=geo and number==0,summary=outcome,
                                  records=route['hops'],on_result=checkpoint,deadline=deadline)
                     route_code=(native_trace(route_target,**options) if route_method=='udp' else
                                 protocol_trace(route_target,method=route_method,tcp_port=tcp_port,**options))
                     attempts+=1;replies+=route_code==0
+                    route['probe_outcomes'].append(outcome)
                     route['statistics']=summarize_hops(route['hops'])
                     checkpoint()
                 route.update(state='reached' if replies else 'incomplete',probe_rounds_run=attempts,destination_responses=replies)

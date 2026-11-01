@@ -33,8 +33,8 @@ def normalize_report(report):
             add(f'network.{stage}.{i}','network',evidence.get('status'),stage,item.get('hostname',item.get('target')),evidence,evidence.get('error_code'))
     route=report.get('route')
     if route:
-        add('route.destination','route','success' if route.get('state')=='reached' else 'unknown',
-            route.get('method','udp')+'_trace',route.get('target'),{'state':route.get('state')},
+        add('route.destination','route','success' if route.get('state')=='reached' else 'unsupported' if route.get('state')=='unsupported' else 'skipped' if route.get('state')=='dependency_missing' else 'unknown',
+            route.get('method','udp')+'_trace',route.get('target'),{'state':route.get('state')},route.get('error_code'),
             limitations=['Router silence is not end-to-end packet loss; location is estimated.'])
         for i,item in enumerate(route.get('hops',[])):
             add(f'route.hop.{i}','route','success' if item.get('state') in ('reply','reached') else 'unknown',

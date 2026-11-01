@@ -132,8 +132,9 @@ def return_routes(*,method='udp',family=4,hops=30,geo=False,tcp_port=443,destina
                     if on_result:on_result()
                 def emit(line,**kwargs):
                     if out:out.line(line,'unknown')
+                row['trace_outcome']={}
                 code=trace_method(row['target'],emit,method=method,tcp_port=tcp_port,hops=hops,lang=out.lang if out else 'en',
-                                  geo=geo,records=row['hops'],on_result=progress,deadline=time.monotonic()+30)
+                                  geo=geo,records=row['hops'],on_result=progress,deadline=time.monotonic()+30,summary=row['trace_outcome'])
                 row['state']='reached' if code==0 else 'incomplete'
                 row['statistics']=summarize_hops(row['hops'])
             if on_result:on_result()
