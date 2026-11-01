@@ -18,6 +18,9 @@ class Source:
     download_url: str
     upload_url: str | None = None
     use_range: bool = False
+    capped_stream: bool = False
+    carrier: str | None = None
+    mainland: bool | None = None
 
 
 # Fixed official test endpoints only. No arbitrary URLs, account keys or binaries.
@@ -26,7 +29,16 @@ SOURCES = {
                          'https://speed.cloudflare.com/__up'),
     'hetzner-fsn': Source('Hetzner','DE / Falkenstein','https://fsn1-speed.hetzner.com/100MB.bin',use_range=True),
     'ovh-rbx': Source('OVHcloud','FR / Roubaix','https://lil1-rbx.speedtest.network.ovh.net/files/100Mb.dat',use_range=True),
+    'cn-telecom-sh': Source('China Telecom','CN / Shanghai','https://speedtest1.online.sh.cn:8080/speedtest/random4000x4000.jpg',
+                            capped_stream=True,carrier='telecom',mainland=True),
+    'cn-unicom-sh': Source('China Unicom','CN / Shanghai','https://mobile.shunicomtest.com:8080/speedtest/random4000x4000.jpg',
+                           capped_stream=True,carrier='unicom',mainland=True),
+    'cn-mobile-fz': Source('China Mobile','CN / Fuzhou','https://csfw.fj.chinamobile.com:8080/speedtest/random4000x4000.jpg',
+                           capped_stream=True,carrier='mobile',mainland=True),
+    'mobile-hk': Source('China Mobile Hong Kong','HK / not mainland China','https://speedtestbb.hk.chinamobile.com:8080/speedtest/random4000x4000.jpg',
+                        capped_stream=True,carrier='mobile',mainland=False),
 }
+CHINA_SOURCES=('cn-telecom-sh','cn-unicom-sh','cn-mobile-fz')
 # Keep the slower, environment-sensitive Hetzner endpoint explicitly selectable.
 DEFAULT_SOURCES = ('cloudflare','ovh-rbx')
 
@@ -55,6 +67,10 @@ class Sample:
 
 
 def transfer(direction, size, source='cloudflare'):
+    from .worker import enabled,invoke
+    if enabled():
+        result=invoke('transfer',{'direction':direction,'size':size,'source':source},timeout=25)
+        return Sample(**result) if isinstance(result,dict) else Sample(direction,size,error='request_failed',source=source)
     if direction not in ('download', 'upload') or not 1 <= size <= 20 * 1024**2:
         raise ValueError('Invalid transfer limits')
     if source not in SOURCES:
@@ -67,9 +83,9 @@ def transfer(direction, size, source='cloudflare'):
     headers = {'User-Agent': 'ProxyDoctor/0.4.1', 'Accept-Encoding': 'identity',
                'Cache-Control': 'no-cache'}
     url = provider.download_url
-    if not provider.use_range:
+    if not provider.use_range and not provider.capped_stream:
         url += '?bytes=' + str(size)
-    else:
+    elif provider.use_range:
         headers['Range'] = f'bytes=0-{size-1}'
     data = None
     if direction == 'upload':
@@ -104,7 +120,23 @@ def transfer(direction, size, source='cloudflare'):
             pop = ray.rsplit('-', 1)[-1]
             if len(pop) == 3 and pop.isalpha():
                 result.pop = pop.upper()
-            body = read_limited(response, size if direction == 'download' else 65536, start + 30)
+            if direction=='download' and provider.capped_stream:
+                # Fixed public test images often ignore Range. Read exactly the
+                # consented payload, then close; never consume the full object.
+                if not response.headers.get('Content-Type','').lower().startswith('image/jpeg'):
+                    result.error='unexpected_test_content';return result
+                chunks=[];remaining=size
+                while remaining:
+                    if time.monotonic()-start>20:raise TimeoutError()
+                    read=getattr(response,'read1',response.read)
+                    block=read(min(65536,remaining))
+                    if not block:break
+                    chunks.append(block);remaining-=len(block)
+                body=b''.join(chunks)
+                if not body.startswith(b'\xff\xd8'):
+                    result.error='unexpected_test_content';return result
+            else:
+                body = read_limited(response, size if direction == 'download' else 65536, start + 30)
             if direction == 'download' and len(body) != size:
                 result.error = 'short_response'
                 return result
@@ -147,6 +179,9 @@ def measure(rounds=3, sample_mib=4, on_sample=None, source='cloudflare'):
     source_ids((source,))
     provider = SOURCES[source]
     report = {'source':source,'provider':provider.name,'region':provider.region,
+              'carrier_claim':provider.carrier,'mainland_china':provider.mainland,
+              'provider_identity':'catalogue_claim' if provider.carrier else 'official_test_endpoint',
+              'directions_scope':'download: node_to_this_host; upload: this_host_to_node',
               'download_url':provider.download_url,'upload_supported':provider.upload_url is not None,
               'method': 'sequential_https_wall_time',
               'payload_budget_bytes': payload_budget(rounds,sample_mib,(source,)),
@@ -196,17 +231,18 @@ def is_complete(report):
                for result in source['directions'].values())
 
 
-def run_console(lang='zh',color='auto',rounds=3,sample_mib=4,sources=None):
+def run_console(lang='zh',color='auto',rounds=3,sample_mib=4,sources=None,destination=None,on_result=None,*,out=None):
     from .console import Console
-    out=Console(lang,color);tr=out.text
+    out=out if out is not None else Console(lang,color);tr=out.text
     selected=source_ids(sources)
     budget=payload_budget(rounds,sample_mib,selected)/1024**2
-    print(tr(f'  {len(selected)} 个来源 · 每方向 {rounds} 轮 × {sample_mib} MiB · 请求载荷最多 {budget:g} MiB',
-             f'  {len(selected)} sources · {rounds} rounds × {sample_mib} MiB/direction · requested payload ≤ {budget:g} MiB'),flush=True)
+    out.line(tr(f'{len(selected)} 个来源 · 每方向 {rounds} 轮 × {sample_mib} MiB · 请求载荷最多 {budget:g} MiB',
+                f'{len(selected)} sources · {rounds} rounds × {sample_mib} MiB/direction · requested payload ≤ {budget:g} MiB'))
     def source_output(identifier,event,result):
         provider=SOURCES[identifier]
         if event=='start':
-            print('\n'+out.paint(f'{provider.name} · {provider.region}','title'),flush=True)
+            out.line(f'{provider.name} · {provider.region}','title')
+            out.row(tr('测速方向','Direction'),tr('下载：节点 → 本机；上传：本机 → 节点','Download: node → this host; upload: this host → node'),'unknown')
             if not provider.upload_url: out.row(tr('上传','Upload'),tr('不支持（该来源仅提供下载）','Not supported (download-only source)'),'unknown')
             return
         for direction,summary in result['directions'].items():
@@ -221,8 +257,15 @@ def run_console(lang='zh',color='auto',rounds=3,sample_mib=4,sources=None):
                   'insufficient':tr('有效轮次不足','Insufficient successful rounds')}.get(summary['quality'])
             if note: out.row('',note,'unknown')
     def sample_output(identifier,direction,number,total,sample):
+        if destination is not None:
+            destination.setdefault('sample_events',[]).append(asdict(sample))
+            if on_result is not None:on_result()
         label=tr('下载','Download') if direction=='download' else tr('上传','Upload')
         value=f'{sample.mbps:.2f} Mbps · {sample.elapsed_s:.2f}s' if sample.mbps is not None else tr('未成功','Failed')+' · '+str(sample.error)
         if sample.pop: value+=' · '+sample.pop
         out.row(f'{label} {number}/{total}',value,'ok' if sample.mbps is not None else 'unknown')
-    return measure_many(rounds,sample_mib,selected,source_output,sample_output)
+    result=measure_many(rounds,sample_mib,selected,source_output,sample_output)
+    if destination is not None:
+        destination.update(result)
+        return destination
+    return result

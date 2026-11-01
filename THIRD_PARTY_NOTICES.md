@@ -37,3 +37,44 @@ API availability, accuracy and terms are controlled by each provider. IP locatio
 is an estimate, not verified physical hardware location.
 
 Last reviewed / 最后核对：2026-10-31.
+# Additional design reference — 2026-11-01
+
+xykt/IPQuality: https://github.com/xykt/IPQuality . Its root LICENSE contains
+GNU AGPL v3. We reviewed ip.sh and its mail/DNSBL entry points for functional
+coverage and report organization. No implementation, DNSBL list or scraped
+provider data from that project is bundled. Our PTR/SMTP probes and overview
+renderer are independently written. Provider APIs and any future datasets or
+maps require their own terms and licensing review.
+
+## 1.0 公测新增参考与数据服务（2026-11-01）
+
+- NextTrace / NTrace-core：https://github.com/nxtrace/NTrace-core ，GPL-3.0；仅参考公开三城运营商测试目标域名的事实和用途，没有复制其 Go 实现、打包二进制或调用其定位鉴权服务。目标参考：https://github.com/nxtrace/NTrace-core/blob/main/fast_trace/basic.go 。
+- CleanIP sh.cd：https://github.com/CleanIP/sh.cd ，MIT，Copyright (c) 2026 CleanIP；参考少量公开测速端点信息和节点失败需诚实展示的设计，没有复制其 shell 执行/上传流程。目录标签不能证明当前运营商、物理位置或服务授权；代码开源不等于测速服务永远开放。
+- VPSDance/vkit：https://github.com/VPSDance/vkit/blob/main/speedtest.sh ，仅作为寻找公开候选端点的研究线索；未复制脚本、打包或执行。未确认许可的代码不作为本项目实现依赖。
+- RIPEstat Data API：https://stat.ripe.net/docs/data-api/ripestat-data-api ，查询 network-info、asn-neighbours、bgp-state。使用 HTTPS，逐次查询、有限响应/超时，不下载整个 BGP 表。结果记录 RIPE RIS 采集器视角，按服务条款和限额使用。
+- 系统 traceroute 是用户系统已有的可选工具。本包不分发、不自动安装，不使用 shell、不自动提权。UDP 模式保持自主标准库实现。
+- 固定测速端点只发送测试载荷，没有订阅、账号或 API 密钥。HTTPS 下载不禁用证书校验、不自动降级 HTTP；小流量明文协议探测单独标明范围。
+
+CleanIP 参考数据的许可证声明：
+
+MIT License
+
+Copyright (c) 2026 CleanIP
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

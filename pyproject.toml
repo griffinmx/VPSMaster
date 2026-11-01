@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "proxydoctor"
-version = "0.5.0"
+version = "1.0.0b1"
 description = "Read-only Ubuntu preflight and security checks"
 readme = "README.en.md"
 license = "MIT"

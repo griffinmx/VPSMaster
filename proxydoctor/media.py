@@ -81,6 +81,10 @@ class VisibleText(HTMLParser):
 
 
 def fetch_page(url):
+    from .worker import enabled,invoke
+    if enabled():
+        result=invoke('page',{'url':url})
+        return Page(**result) if isinstance(result,dict) else Page(None,reason='network_timeout_or_error')
     expected = urllib.parse.urlparse(url).hostname
     allowed = next((hosts for hosts in REDIRECT_HOSTS if expected in hosts),frozenset((expected,)))
     deadline = time.monotonic() + 15
@@ -288,13 +292,42 @@ def display(result, lang='zh'):
     return label + f' · HTTP {http if http is not None else "---"}', 'unknown'
 
 
-def run_console(lang='zh', color='auto'):
+def check_reachability(service):
+    """Public page reachability only; no catalogue, region or playback verdict."""
+    from .reports import utc_now
+    url = SERVICES[service][0]
+    started = time.monotonic()
+    page = fetch_page(url)
+    state = ('reachable' if page.status is not None and 200 <= page.status < 300 and not page.reason else
+             'access_denied' if page.status in (401,403,451) else
+             'rate_limited' if page.status == 429 else
+             'http_error' if page.status is not None else 'unknown')
+    return {'service':service,'scope':'public_page_reachability','state':state,
+            'http':page.status,'evidence':page.reason or 'http_response',
+            'checked_at':utc_now(),'elapsed_ms':round((time.monotonic()-started)*1000,3),
+            'playback':'not_tested','unlock':'not_tested',
+            'probes':[{'url':url,'final_url':page.url,'http':page.status}]}
+
+
+def display_reachability(result,lang='zh'):
+    zh=lang=='zh'
+    labels={'reachable':('网页可达','Web page reachable'),
+            'access_denied':('访问受限','Access denied'),
+            'rate_limited':('请求限流','Rate limited'),
+            'http_error':('HTTP 异常','HTTP error'),
+            'unknown':('可达性未确认','Reachability unconfirmed')}
+    state=result.get('state','unknown')
+    label=labels.get(state,labels['unknown'])[0 if zh else 1]
+    return label+' · HTTP '+str(result.get('http') or '---'), 'ok' if state=='reachable' else 'unknown'
+
+
+def run_console(lang='zh', color='auto', results=None, on_result=None, *, out=None):
     from concurrent.futures import ThreadPoolExecutor, as_completed
     from .console import Console
-    out = Console(lang,color)
-    results = {}
+    out = out if out is not None else Console(lang,color)
+    results = {} if results is None else results
     with ThreadPoolExecutor(max_workers=4) as pool:
-        futures = {pool.submit(check,service):service for service in SERVICES}
+        futures = {pool.submit(check_reachability,service):service for service in SERVICES}
         for future in as_completed(futures):
             service = futures[future]
             try:
@@ -303,6 +336,8 @@ def run_console(lang='zh', color='auto'):
                 # Never echo raw provider exceptions (URLs may include sensitive data).
                 result = {'state':'unknown','http':None,'evidence':'network_error','playback':'not_tested'}
             results[service] = result
-            value, status = display(result,lang)
+            if on_result is not None:
+                on_result()
+            value, status = display_reachability(result,lang)
             out.row(service,value,status)
     return results

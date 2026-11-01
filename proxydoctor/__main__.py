@@ -1,4 +1,14 @@
 from .cli import main
+import signal
+
+def cancelled(signum, frame):
+    from .worker import cancel_all
+    cancel_all()
+    raise KeyboardInterrupt
+
+if hasattr(signal,'SIGTERM'):
+    signal.signal(signal.SIGTERM,cancelled)
+signal.signal(signal.SIGINT,cancelled)
 
 try:
     main()

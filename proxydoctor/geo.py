@@ -17,6 +17,16 @@ class GeoLocator:
         if not self.enabled: return unknown
         if address in self.cache: return self.cache[address]
         result=unknown
+        from .worker import enabled
+        if enabled():
+            from .net import request_json
+            language='zh-CN' if self.lang=='zh' else 'en'
+            data,state=request_json('https://ipwho.is/'+str(addr)+'?lang='+language)
+            if state=='ok' and data.get('success') is True:
+                values=list(dict.fromkeys(data[k] for k in ('country','region','city') if isinstance(data.get(k),str) and data[k]))
+                if values:result=' / '.join(values)
+            self.cache[address]=result
+            return result
         class NoRedirect(urllib.request.HTTPRedirectHandler):
             def redirect_request(self,*args): return None
         try:
@@ -32,6 +42,7 @@ class GeoLocator:
                     if values: result=' / '.join(values)
         except urllib.error.HTTPError as exc:
             if exc.code==429: self.enabled=False
+            exc.close()
         except (OSError,ValueError,urllib.error.URLError): pass
         self.cache[address]=result
         return result

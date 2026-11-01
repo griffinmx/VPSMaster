@@ -1,155 +1,108 @@
-# ProxyDoctor
+# VPS 检测工具 · 1.0 公测版
 
 [中文](README.md) | [English](README.en.md)
 
-面向 Ubuntu VPS 新手的原生 Python 只读诊断工具。支持 Ubuntu 22.04 及更新版本；
-当前优先验收 22.04、24.04，其他版本逐步实测。Python 3.10+，没有第三方运行依赖。
-本阶段不安装 sing-box，不修改 SSH/防火墙，不自动提权，不下载执行远程脚本。
+面向 Ubuntu VPS 的 Python 命令行体检工具。内部项目名及命令仍为 ProxyDoctor / `proxydoctor`。
+**这是 1.0 公测版，非最终版本。** 包版本 `1.0.0b1`；当前是本地候选包，尚未公开发布或完成最终验收。
 
-## 快速运行
+## 安装
 
-下载源码包并解压，进入项目目录：
-
-```bash
-bash proxydoctor.sh
-bash proxydoctor.sh suite --lang en
-bash proxydoctor.sh suite --offline
-```
-
-下载或克隆本身不执行程序。默认入口 `suite` 会联网、逐项回显；
-`check` 默认只读取本机信息。普通用户可运行，权限不足显示未知；程序不调用 sudo。
+需要 Linux、Python 3.10+ 和标准库 venv，支持目标为 Ubuntu 22.04 及更新版本。
+没有第三方 Python 运行依赖，不调用 sudo、pip 或系统包管理器。
+先从可信来源核对摘要，再解压并阅读 install.py。没有 unzip 也可用 Python 解压：
 
 ```bash
-python3 -m proxydoctor check
-python3 -m proxydoctor check --port 8388 --json --output check.json
-python3 -m proxydoctor suite --json-output suite.json --color always
+sha256sum -c ProxyDoctor-v1.0.0-beta.1.zip.sha256
+python3 -m zipfile -e ProxyDoctor-v1.0.0-beta.1.zip .
+cd ProxyDoctor-v1.0.0-beta.1
+python3 install.py --run
 ```
 
-报告文件不会覆盖已有文件，也不会自动创建目录。原生报告仅保存在本地，IP 默认脱敏；
-脱敏不是匿名保证，分享前仍应检查。`--show-ip` 可在终端显示出口地址，文件仍脱敏。
-路由模块按用户要求在终端显示实际节点 IP，导出文件中隐藏。
+安装到用户目录的隔离环境，首次仅运行离线体检。已有目录不会覆盖；失败只清理本次新建目录。
+缺少 Python/venv 时明确退出，不自动安装系统依赖。`--prefix` 可指定不存在的用户目录。
+安装后的启动器及各 Python worker 显式使用 `-B`，忽略用户包路径并禁止这些启动路径生成字节码缓存。此承诺覆盖随包安装器启动命令和源码脚本；自行使用 Python 导入或 `python -m` 时应加 `-B`，pip 的安装期预编译及外部调用方不在此范围。
 
-## 四模块
+```bash
+PD="$HOME/.local/share/proxydoctor/1.0.0b1/bin/proxydoctor"
+"$PD" check --theme framed --lang zh
+"$PD" suite --offline --theme framed
+"$PD" suite --lang en
+"$PD" quality --color always
+"$PD" ipquality --show-ip
+"$PD" media
+"$PD" --help
+```
 
-| 模块 | 直接回显 | 边界 |
+`check`、`suite` 支持 default/iprisk/framed 三种主题。结果直接逐项显示在命令行。
+中英文可选；纯 Linux 文本控制台默认英文，显式 `--lang zh` 或 `--lang=zh` 保留中文。
+
+## 能力与范围
+
+| 模块 | 本版能力 | 结果范围 |
 | --- | --- | --- |
-| VPS 资源与体检 | 系统、架构、CPU、逻辑核心、内核、内存、磁盘、SHA-256 样本；DNS 配置、端口、SSH 保护、SSH 设置和防火墙提示 | 系统可见资源不保证等于商家配额；SHA-256 不是完整 CPU 基准；本机读取不能确认云防火墙放行 |
-| 节点网络/IP 质量 | 实际 DNS、TCP 请求，IP 归属/ASN/地区/类型、风险标记、来源状态、覆盖率和分歧 | DNS 返回 IPv6 不代表 IPv6 连通；第三方标记不是客观安全保证，不合并不同评分 |
-| 路由 | 原生 Linux IPv4/IPv6 UDP 追踪，默认 30 跳，可至 64；每行 IP、延迟、估计位置 | 中间节点可能不回包，位置是数据库估计，不保证真实物理位置；NAT/过滤可能导致未到达 |
-| 流媒体 | Netflix、Disney+、YouTube Premium、Spotify、Prime Video、Max、Apple TV+、Hulu、BBC iPlayer、Paramount+ | 明确地区提示/套餐证据重复确认；片库和元数据不等于账号/DRM 实际播放；规则失效和网络失败显示未知 |
+| 系统和资源 | 系统、CPU、内存、Swap、根分区、可见配额、短采样 steal/PSI | 无法证明资源独享；不执行 CPU/磁盘基准 |
+| 网络 | 分 IPv4/IPv6 的 DNS、TCP、证书验证 TLS | 本机到指定目标的当前观测 |
+| 路由 | 原生 UDP；可选系统 traceroute 的 ICMP/TCP | 默认 30 跳、最多 64 跳；响应缺失不等于转发丢包 |
+| IP 信息 | 归属、ASN、运营商及分来源风险；可选 PTR/TCP25 | 缺失保持未知；接口失败显示，未配置的可选密钥来源可省略 |
+| 流媒体 | Netflix、Disney+、YouTube Premium 等 10 项公开网页 | 仅可达性，不输出解锁或播放成功结论 |
+| 安全 | SSH、端口、防火墙、权限和更新缓存只读检查 | 不修改配置，不是完整漏洞扫描 |
+| 带宽 | 多来源多轮下载，Cloudflare 支持上传 | 必须明确允许；短样本不报线路容量 |
+| BGP | RIPE RIS 前缀、起源 ASN、邻居、AS_PATH 样本 | 采集器视角，不等于本机选路或商业上游 |
 
-JSON 综合报告 schema_version=2，同时包含本机检查、DNS/TCP、每个测速来源、IP 来源观察、路由逐跳及媒体探测依据。
-绿色表示取得结果或局部通过，红色表示已知风险/限制/冲突，黄色表示未知、跳过或证据不足。
-支持 `--color auto|always|never` 和 `NO_COLOR`。复杂配置的完整依据可用 `check --json` 查看。
-`sshd -T` 读取默认配置，不保证与运行中实例或 Match 条件相同。安装与修复阶段仍须独立保护 SSH。
+## 三网、路由和 BGP
 
-## 多来源测速
-
-```bash
-bash proxydoctor.sh bandwidth
-bash proxydoctor.sh bandwidth --source ovh-rbx --rounds 3 --sample-mib 4
-bash proxydoctor.sh bandwidth --source hetzner-fsn --sample-mib 1
-bash proxydoctor.sh suite --bandwidth-source cloudflare
-```
-
-| 来源参数 | 节点标签 | 下载 | 上传 | 默认 |
-| --- | --- | --- | --- | --- |
-| cloudflare | Cloudflare / Anycast | 是 | 是 | 是 |
-| ovh-rbx | OVHcloud / 法国 Roubaix | 是 | 不支持 | 是 |
-| hetzner-fsn | Hetzner / 德国 Falkenstein | 是 | 不支持 | 否，当前网络较慢 |
-
-每方向 128 KiB 预热不计统计；正式 3–8 轮、每轮 1–20 MiB。默认请求测速载荷
-最多 36.375 MiB，不含协议开销及其他模块请求。各来源独立给出中位数、范围、成功数；
-不做跨来源平均。样本短于 1 秒、轮次不足或波动大显示黄色。吞吐包含建连，不能核验商家标称带宽。
-对大文件只接受精确 HTTP 206 分段响应；若服务器忽略 Range，不读取整文件正文，不回退完整下载。
-测速超过时限或未完成不记为成功；不支持上传不记为上传失败。带宽子报告 schema_version=2。
-
-## IP 数据与密钥
+以下是新增公测能力，尚待本轮 Linux 与海外 VPS 实测验收。
 
 ```bash
-bash proxydoctor.sh ipquality --show-ip --json-output ip.json
-bash proxydoctor.sh ipquality --no-enrichment
-bash proxydoctor.sh suite --no-ip-enrichment
+# 固定候选的小流量探测，不运行带宽测试
+"$PD" cn-nodes
+# 大陆三运营商候选多轮下载；仍可能不可用，失败如实显示
+"$PD" bandwidth --china --allow-bandwidth --rounds 3 --sample-mib 4
+"$PD" bandwidth --source cn-telecom-sh --allow-bandwidth
+# 香港移动单独标注，不能替代大陆移动
+"$PD" bandwidth --source mobile-hk --allow-bandwidth
+# ICMP/TCP 需要系统已经安装 traceroute，缺少则明确退出，不提权安装
+"$PD" trace --target 1.1.1.1 --method tcp --tcp-port 443 --geo
+"$PD" trace --target 1.1.1.1 --method icmp --max-hops 64
+# 北京/上海/广州 × 三网，逐条执行，每条约 30 秒探测软预算
+"$PD" return-route --method udp
+"$PD" return-route --method tcp --family 6
+"$PD" bgp --target 1.1.1.1
+# 综合入口额外模块需明确开启
+"$PD" suite --route-method tcp --include-return-routes --include-bgp
 ```
 
-默认查询 ipapi.is、proxycheck.io 和 IP2Location。若 ipapi.is 连接失败，尝试 ipify 获取出口 IP。
-后续查询固定为该地址，拒绝把其他地址的响应混入结果。所有这些服务会看到请求来源，
-另外两家会收到查询的出口地址。可用 `--no-ip-enrichment` 关闭额外来源，`--offline` 关闭综合入口联网。
+三城探测方向为“本机 → 中国目标”，在海外 VPS 上通常称回程；不包含中国侧到 VPS 的去程或全国各省全部线路。
+ASN 标签不能证明 CN2 GIA 等套餐等级。测速下载是节点到本机，上传是本机到节点，和逐跳探测方向分别解释。
 
-17 项核心字段包括运营商/ASN、地区/时区、网络类型、网段滥用比例，以及数据中心、代理、VPN、
-Tor、近期滥用、移动、卫星、Anycast、保留地址标记。按来源记录观察和字段来源；布尔标记冲突显示
-“来源不一致”，不会自动选成安全。IP2Location 免费模式的有限代理标记单独保留，不替代通用 VPN 判断。
-proxycheck.io 风险/置信度与 AbuseIPDB 评分分别保存，不求平均，不把网段比例当作单 IP 恶意概率。
+节点标签来自公开目录，不等于实测身份认证。当前开发机已验证上海电信及香港移动的小图片可访问；大陆联通、移动尚无本轮成功证据。
+香港不计入大陆三网覆盖。HTTPS 测速不自动降级明文或关闭证书验证。三网候选本轮仅下载，未实现三网上传。
+`cn-nodes` 使用少量明文测试协议数据，不发送凭据或报告；小样本成功不等于带宽容量。
 
-免密钥 API 也有配额：proxycheck.io 当前限 100 次/天，IP2Location 当前限 1000 次/天；以服务官方规则为准。
-遇到限流不自动重试。ipapi.is 匿名响应只提供基础数据；扩展字段和 AbuseIPDB 举报数据可通过密钥补充。
-不要把密钥发到聊天、提交到仓库或放进命令参数；在 VPS 本地无回显输入：
+## 报告、安全和中断
+
+报告默认保存在当前目录的 reports/。支持 `--json-output` 的命令可指定路径；已有文件不会覆盖。
+保存文件默认脱敏 IP；`--show-ip` 只影响终端。分享前仍须人工复核。
 
 ```bash
-read -rsp 'ipapi.is API Key: ' PROXYDOCTOR_IPAPI_KEY
-export PROXYDOCTOR_IPAPI_KEY
-printf '\n'
-read -rsp 'AbuseIPDB API Key: ' PROXYDOCTOR_ABUSEIPDB_KEY
-export PROXYDOCTOR_ABUSEIPDB_KEY
-printf '\n'
-bash proxydoctor.sh ipquality
+"$PD" suite --offline --json-output report.json
+"$PD" report --input report.json --output report.md
+"$PD" recover --journal report.json.events.jsonl --output recovered.json
+"$PD" recover --journal report.json.events.jsonl --output recovered.md --format markdown
 ```
 
-ipapi.is 密钥放 HTTPS POST 正文，AbuseIPDB 放请求头，不写入 URL 或报告。
-缺少字段和密钥明确显示未知；完整覆盖率只针对定义的核心字段，不代表所有数据库或安全认证。
-零举报不代表干净 IP。只确认本次接口请求的出口和地址族，不保证每个服务连接都使用同一出口。
+Ctrl+C/SIGTERM 尝试取消活动子进程并保存已有记录。API、DNS、命令、测速有限时；恢复日志有大小上限。
+JSON 保留原模块和统一 result_items 的状态、方法、时间、来源及范围。Markdown 使用防提前闭合的 JSON 代码围栏。
+断电、SIGKILL、磁盘故障时以最后完整恢复事件为准。
 
-## 路由与媒体复测
+退出码：0 正常完成，1 有提示/不完整/保存失败，2 参数或安装错误，130 中断。
+默认只读，不修改 SSH、防火墙、路由、系统 DNS，不自动上传完整报告或修复系统；联网目标会看到请求来源 IP。
 
-```bash
-bash proxydoctor.sh suite --route-target 1.1.1.1 --max-hops 64
-bash proxydoctor.sh suite --route-target 2606:4700:4700::1111 --no-geo
-bash proxydoctor.sh media --color always --json-output media.json
-```
+## 公测状态与开源
 
-路由位置来自 ipwho.is，按运行缓存；私网/保留节点不查询。`--no-geo` 关闭位置查询。
-媒体重复确认地区提示/带价格的具体套餐；Netflix 检查结构化片库元数据，BBC 额外查询测试频道的公开媒体元数据。
-不获取付费节目、不下载流媒体、不绕过登录/DRM，不保留媒体签名地址。BBC 的测试频道结果不代表整个平台。
-HTTP 200、403、页面可达、套餐或片库可见均不作为“完全解锁”证据。
+P0 修复自动化：277 通过、1 项 Windows 符号链接权限跳过。当前构建的实机验收结果以随候选 ZIP 单独交付的 BETA_ACCEPTANCE_REPORT.md 和结构化结果中的 SHA256 为准；不将旧候选报告当作本包已通过。ICMP/TCP 实际权限、完整大陆三网和海外回程需按该报告的覆盖范围判断。
+旧 Alpha 结果不是本包验收证据。见 [当前状态](CURRENT_STATUS.md)、[变更和待测项](PUBLIC_BETA_CHANGE_REPORT.md)。
+尚无全国完整三网、长期监测、CPU/磁盘基准、DNSBL、Web UI、代理部署、Karing 订阅或自动更新卸载。
+更新安装到新版本目录；卸载前退出进程、备份报告，仅移除自己确认过的安装目录。
 
-## 退出码
-
-- `check`：0=无已知注意/失败项，仍可能含未知；1=有注意/失败项；2=参数/保存错误。
-- `suite/bandwidth/ipquality/media`：0=该命令定义的范围完整，离线 0 仅表示本地执行完成；1=有未完成/未知/波动或未验证播放；2=参数/保存错误。
-- 流媒体命令仍保留“账号播放未测”，因此返回 1；这不表示程序崩溃。
-- Ctrl+C 返回 130，不改系统设置。
-
-## 安装与开发
-
-源码可直接运行。也可把提供的 wheel 安装到自己的虚拟环境：
-
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install /path/to/proxydoctor-0.5.0-py3-none-any.whl
-.venv/bin/proxydoctor suite --offline
-```
-
-Ubuntu 若未安装 venv 支持，需另行安装系统对应组件；程序不会自动安装。
-开发测试：`python -m pip install pytest` 后 `python -m pytest -q`。
-GitHub Actions 配置已提供，未发布仓库前不宣称远程 CI 已运行。
-贡献规范见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全反馈见 [SECURITY.md](SECURITY.md)。
-
-## 阶段一验收与后续
-
-本轮按用户选择完成代码和 22.04/24.04 虚拟机验收；实际记录以交付验收报告为准。
-海外 VPS、真实付费账号播放、带真实密钥的扩展数据，以及 Ubuntu 其他版本仍待分别验收；不会把它们标为已通过。
-之后阶段才实现 sing-box 安装、Karing 协议连通、修复预览/备份/回滚、Web UI 和安全订阅传输。
-不对外开放明文 HTTP 订阅，不根据只读体检自动修改 SSH/防火墙。
-
-## 开源与来源
-
-原创代码使用 MIT 许可证。感谢 ECS、NodeQuality、NetQuality/IPQuality、NextTrace、RegionRestrictionCheck 的功能和展示设计参考；
-默认实现没有打包或复制上游脚本/数据库。来源和许可范围见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-本地第三方适配器仅在显式指定时运行，第三方行为/输出不保证只读或脱敏。
-
-数据接口：[Cloudflare](https://github.com/cloudflare/speedtest)、[OVHcloud](https://proof.ovh.net/)、
-[Hetzner](https://docs.hetzner.com/storage/object-storage/troubleshooting/bandwidth-latency-issues/)、
-[ipapi.is](https://ipapi.is/developers.html)、[proxycheck.io](https://proxycheck.io/api/)、
-[IP2Location](https://www.ip2location.io/ip2location-documentation)、[AbuseIPDB](https://docs.abuseipdb.com/)、
-[ipwho.is](https://ipwhois.io/documentation)、[ipify](https://www.ipify.org/)。
-[Netflix 官方 VPN 说明](https://help.netflix.com/en/node/114701) 也说明了目录限制，不保证页面可达就能播放。
+MIT 项目，标准库运行。感谢 [NextTrace](https://github.com/nxtrace/NTrace-core)、[CleanIP sh.cd](https://github.com/CleanIP/sh.cd)、[RIPEstat](https://stat.ripe.net/) 和既有参考项目；详见 [来源和许可](THIRD_PARTY_NOTICES.md)。不打包下载执行第三方检测脚本或测速客户端。

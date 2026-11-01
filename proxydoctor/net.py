@@ -30,7 +30,13 @@ def read_limited(response, limit, deadline):
     raise ValueError('response_too_large')
 
 
-def request_json(url, *, payload=None, headers=None):
+def request_json(url, *, payload=None, headers=None, max_bytes=65536):
+    if not isinstance(max_bytes,int) or not 1<=max_bytes<=524288:
+        raise ValueError('Invalid JSON response limit')
+    from .worker import enabled,invoke
+    if enabled():
+        result=invoke('json',{'url':url,'payload':payload,'headers':headers,'max_bytes':max_bytes})
+        return tuple(result) if isinstance(result,list) and len(result)==2 else (None,'request_failed')
     request_headers = {'Accept': 'application/json', 'Accept-Encoding': 'identity',
                        'User-Agent': 'ProxyDoctor/0.4'}
     request_headers.update(headers or {})
@@ -44,7 +50,7 @@ def request_json(url, *, payload=None, headers=None):
         with opener().open(request, timeout=8) as response:
             if response.status != 200:
                 return None, 'http_' + str(response.status)
-            result = json.loads(read_limited(response, 65536, deadline))
+            result = json.loads(read_limited(response, max_bytes, deadline))
         if not isinstance(result, dict):
             return None, 'invalid_response'
         return result, 'ok'

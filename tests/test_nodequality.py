@@ -5,10 +5,10 @@ import sys
 def test_nodequality_missing_script_fails(tmp_path):
     result = subprocess.run([sys.executable, '-m', 'proxydoctor', 'nodequality', '--lang', 'en', '--script', str(tmp_path / 'missing')], capture_output=True, text=True)
     assert result.returncode == 2
-    assert 'Local script file not found' in result.stderr
+    assert 'workflow may upload reports and is disabled' in result.stderr
 
 
-def test_nodequality_streams_output_and_propagates_exit(tmp_path, monkeypatch, capsys):
+def test_nodequality_disabled_never_executes_local_script(tmp_path, monkeypatch, capsys):
     from proxydoctor import cli
     script = tmp_path / 'script with spaces.sh'
     script.write_text('# test', encoding='utf-8')
@@ -23,8 +23,8 @@ def test_nodequality_streams_output_and_propagates_exit(tmp_path, monkeypatch, c
     try:
         cli.main()
     except SystemExit as exc:
-        assert exc.code == 7
+        assert exc.code == 2
     else:
         raise AssertionError('expected exit')
-    assert captured == [(['/bin/bash', str(script.resolve())], {'check': False})]
-    assert 'LIVE OUTPUT' in capsys.readouterr().out
+    assert captured == []
+    assert 'LIVE OUTPUT' not in capsys.readouterr().out

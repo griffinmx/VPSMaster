@@ -71,12 +71,12 @@ def test_multiple_sources_stay_separate_with_correct_budget(monkeypatch):
     calls=[];events=[];samples=[]
     def transfer(direction,size,source='cloudflare'):
         calls.append((source,direction,size))
-        speed={'cloudflare':10,'hetzner-fsn':30,'ovh-rbx':50}[source]
+        speed={'cloudflare':10,'hetzner-fsn':30,'ovh-rbx':50}.get(source,60)
         return bw.Sample(direction,size,2,speed,source=source)
     monkeypatch.setattr(bw,'transfer',transfer)
     report=bw.measure_many(sources=tuple(bw.SOURCES),on_source=lambda *args:events.append(args[:2]),on_sample=lambda *args:samples.append(args))
-    assert report['payload_budget_bytes']==int(48.5*1024**2)
-    assert len(calls)==16 and len(samples)==12
+    assert report['payload_budget_bytes']==int(97*1024**2)
+    assert len(calls)==32 and len(samples)==24
     assert report['sources']['hetzner-fsn']['directions']['download']['median_mbps']==30
     assert report['sources']['ovh-rbx']['directions']['download']['median_mbps']==50
     assert 'upload' not in report['sources']['ovh-rbx']['directions']

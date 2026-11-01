@@ -18,7 +18,7 @@ def dns_check():
                "print(json.dumps(sorted(set(x[0] for x in a))))")
     start = time.monotonic()
     try:
-        proc = subprocess.run([sys.executable, '-c', program], capture_output=True,
+        proc = subprocess.run([sys.executable, '-I', '-B', '-c', program], capture_output=True,
                               text=True, timeout=TIMEOUT, check=False)
         if proc.returncode != 0:
             return {'status':'unknown', 'reason':'lookup_failed'}
@@ -45,13 +45,14 @@ def tcp_check(label, address, port):
         return {'target':label, 'port':port, 'status':'unknown'}
 
 
-def run_quality(t, emit=print, compact=False, lang='zh', color='auto', report=None):
+def run_quality(t, emit=print, compact=False, lang='zh', color='auto', report=None, on_result=None):
     """Run explicit checks, flushing each result as soon as it is available."""
     if compact:
         from .console import Console
         console=Console(lang,color)
         dns=dns_check()
         if report is not None: report.update(dns=dns,tcp=[])
+        if on_result is not None: on_result()
         if dns['status']=='pass':
             versions='/'.join(v for v,ok in [('IPv4',dns['ipv4']),('IPv6',dns['ipv6'])] if ok)
             console.row('DNS',f"{versions} / {dns['elapsed_ms']} ms")
@@ -60,6 +61,7 @@ def run_quality(t, emit=print, compact=False, lang='zh', color='auto', report=No
         for label,address,port in TARGETS:
             result=tcp_check(label,address,port)
             if report is not None: report['tcp'].append(result)
+            if on_result is not None: on_result()
             ok=result['status']=='pass'
             console.row(f'{label} TCP/{port}',f"{result['elapsed_ms']} ms" if ok else console.text('未连通','Unreachable'),'ok' if ok else 'bad')
             complete=complete and ok
@@ -70,6 +72,7 @@ def run_quality(t, emit=print, compact=False, lang='zh', color='auto', report=No
     show(t('正在查询 DNS：example.com ...'))
     dns = dns_check()
     if report is not None: report.update(dns=dns,tcp=[])
+    if on_result is not None: on_result()
     complete = dns['status'] == 'pass'
     if dns['status'] == 'pass':
         versions = '/'.join(v for v, ok in [('IPv4', dns['ipv4']), ('IPv6', dns['ipv6'])] if ok) or t('其他')
@@ -80,10 +83,11 @@ def run_quality(t, emit=print, compact=False, lang='zh', color='auto', report=No
         show(t('正在测试 {target} TCP {port} ...', target=label, port=port))
         result = tcp_check(label, address, port)
         if report is not None: report['tcp'].append(result)
+        if on_result is not None: on_result()
         complete = complete and result['status'] == 'pass'
         if result['status'] == 'pass':
             show(t('{target} TCP 连接成功：{ms} ms', target=label, ms=result['elapsed_ms']))
         else:
             show(t('{target} TCP 连接未成功；原因尚未确定。', target=label))
-    show(t('以上结果只代表本次从此服务器到这些测试目标的情况，不代表代理协议、回程路线或 IP 信誉。'))
+    show(t('以上结果为本次从此服务器到这些测试目标的连接情况。'))
     return 0 if complete else 1

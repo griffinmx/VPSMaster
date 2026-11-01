@@ -97,7 +97,7 @@ def reconcile(report):
                         'complete':available==len(FIELDS) and report['sources']['AbuseIPDB']['state']=='ok'}
 
 
-def enrich_report(report):
+def enrich_report(report,on_result=None):
     address=report['ip']
     if not address: return
     url='https://proxycheck.io/v3/'+urllib.parse.quote(address,safe=':')+'?tag=0&ver=24-June-2026'
@@ -120,6 +120,7 @@ def enrich_report(report):
         history=item.get('attack_history')
         risk['attack_count']=sum(history.values()) if isinstance(history,dict) and all(type(n) is int and 0<=n<=2**31 for n in history.values()) else None
         report['provider_risk']['proxycheck.io']=risk
+    if on_result is not None:on_result()
     data,state=request_json('https://api.ip2location.io/?'+urllib.parse.urlencode({'ip':address,'format':'json'}))
     if state=='ok' and valid_ip(data.get('ip'))!=address: state='invalid_response'
     report['sources']['IP2Location']={'state':state,'access':'anonymous'}
@@ -128,7 +129,7 @@ def enrich_report(report):
         report['provider_risk']['IP2Location']={'open_proxy_flag':data.get('is_proxy') if type(data.get('is_proxy')) is bool else None}
 
 
-def collect(enrich=True):
+def collect(enrich=True, mail=False, destination=None, on_result=None):
     """Keys only via environment; never kept in results, URLs or error messages."""
     key = os.environ.get('PROXYDOCTOR_IPAPI_KEY', '').strip()
     abuse_key = os.environ.get('PROXYDOCTOR_ABUSEIPDB_KEY', '').strip()
@@ -149,6 +150,10 @@ def collect(enrich=True):
                              'last_reported_at': None, 'window_days': 90}}
     report['observations']={'ipapi.is':values.copy()}
     report['provider_risk']={}
+    if destination is not None:
+        destination.update(report)
+        report=destination
+    if on_result is not None:on_result()
     if not address and data is None:
         fallback,fallback_state=request_json('https://api.ipify.org?format=json')
         address=valid_ip(fallback.get('ip')) if fallback else None
@@ -176,14 +181,33 @@ def collect(enrich=True):
                 if any(report['reputation'][k] is None for k in ('score', 'total_reports', 'distinct_reporters')):
                     abuse_state = 'partial_response'
     report['sources']['AbuseIPDB'] = {'state': abuse_state}
-    if enrich: enrich_report(report)
+    if on_result is not None:on_result()
+    if enrich: enrich_report(report,on_result)
     reconcile(report)
+    if mail:
+        from .mailquality import collect as collect_mail
+        report['mail_quality']=collect_mail(address)
+    if on_result is not None:on_result()
     return report
 
 
 def render(report,out,show_ip=False):
     tr=out.text;values=report['values'];unknown=tr('未知','Unknown')
     address=report['ip']
+    coverage=report['coverage']
+    concern=[name[3:] for name in ('is_proxy','is_vpn','is_tor','is_abuser') if values.get(name) is True]
+    location=' / '.join(str(values[name]) for name in ('country','region','city') if values.get(name)) or unknown
+    summary=[('IP',address if address and show_ip else tr('已隐藏；--show-ip 显示','Hidden; use --show-ip') if address else unknown,'ok' if address else 'unknown'),
+             ('ASN',values.get('asn') or unknown,'ok' if values.get('asn') else 'unknown'),
+             (tr('运营商','ISP'),values.get('company') or unknown,'ok' if values.get('company') else 'unknown'),
+             (tr('估计位置','Estimated location'),location,'unknown'),
+             (tr('网络类型','Network type'),values.get('network_type') or unknown,'unknown'),
+             (tr('风险标签','Risk flags'),', '.join(concern) if concern else tr('未取得肯定风险标签；不代表安全','No positive risk flag; safety unknown'),'bad' if concern else 'unknown'),
+             (tr('来源冲突','Source conflicts'),str(len(report.get('conflicts',{}))),'unknown'),
+             (tr('数据覆盖','Field coverage'),f"{coverage['available']}/{coverage['total']}",'ok' if coverage['complete'] else 'unknown'),
+             (tr('查询时间','Observed at'),report.get('checked_at',unknown),'unknown')]
+    out.panel(tr('IP 质量概览 · 来源证据，不是纯净度评分','IP quality overview · Provider evidence, not a purity score'),summary)
+    out.row(tr('基础归属与多库证据','Ownership and provider evidence'),tr('分来源记录，不合成纯净度分数','Separate sources; no combined purity score'),'unknown')
     out.row(tr('出口地址','Egress IP'),address if address and show_ip else tr('已隐藏（--show-ip 显示）','Hidden (use --show-ip)') if address else unknown,'ok' if address else 'unknown')
     for key,zh,en in [('company','运营商','ISP'),('asn','ASN','ASN'),('country','国家','Country'),
                       ('region','地区','Region'),('city','城市','City'),('timezone','时区','Timezone'),
@@ -201,19 +225,33 @@ def render(report,out,show_ip=False):
     out.row('proxycheck.io',unknown if risk is None else tr(f'风险分 {risk}/100 · 置信度 {confidence if confidence is not None else "?"}/100',
                                                          f'Risk {risk}/100 · Confidence {confidence if confidence is not None else "?"}/100'),
             'unknown' if risk is None else 'bad' if risk>25 else 'ok')
-    reputation=report['reputation'];score=reputation['score']
-    out.row('AbuseIPDB',unknown if score is None else tr(
-        f"评分 {score}/100 · 90 天举报 {reputation['total_reports']} · 举报者 {reputation['distinct_reporters']}",
-        f"Score {score}/100 · 90-day reports {reputation['total_reports']} · Reporters {reputation['distinct_reporters']}"),
-        'unknown' if score is None else 'bad' if score>0 else 'ok')
+    reputation=report.get('reputation',{}); score=reputation.get('score')
+    if score is not None:
+        out.row('AbuseIPDB',tr(f"举报置信分 {score}/100 · 90 天举报 {reputation.get('total_reports')}",
+                              f"Abuse confidence {score}/100 · 90-day reports {reputation.get('total_reports')}"),
+                'bad' if score>0 else 'unknown')
     coverage=report['coverage']
+    for source,observation in report.get('observations',{}).items():
+        classification=observation.get('network_type')
+        # Skip providers that returned no usable type data (e.g. keyless sources).
+        if classification is None:
+            continue
+        flags=' / '.join(key[3:]+'='+('?' if observation.get(key) is None else tr('是','Yes') if observation[key] else tr('否','No'))
+                         for key in ('is_datacenter','is_proxy','is_vpn','is_tor'))
+        out.row(source,tr('类型：','Type: ')+classification+' · '+flags,'unknown')
+    if report.get('mail_quality'):
+        from .mailquality import render as render_mail
+        render_mail(report['mail_quality'],out)
     out.row(tr('IP 数据覆盖','IP data coverage'),f"{coverage['available']}/{coverage['total']} · IPv{report['ip_family'] or '?'}",
             'ok' if coverage['complete'] else 'unknown')
     labels={'ok':('成功','OK'),'key_required':('需要密钥','Key required'),'rate_limited':('限流','Rate limited'),
             'invalid_response':('响应格式异常','Invalid response'),'request_failed':('请求失败','Request failed')}
     for source,item in report['sources'].items():
-        state=item['state'];name=labels.get(state,(state,state))[0 if out.lang=='zh' else 1]
+        state=item['state']
+        # Skip sources that need a key we don't have, or that returned no usable
+        # data (key_required / invalid_response / request_failed). Only show the
+        # ones that actually produced results.
+        if state == 'key_required':
+            continue
+        name=labels.get(state,(state,state))[0 if out.lang=='zh' else 1]
         out.row(source+' API',name,'ok' if state=='ok' else 'unknown')
-    if not coverage['complete']:
-        print(tr('  可选扩展字段：PROXYDOCTOR_IPAPI_KEY；举报数据：PROXYDOCTOR_ABUSEIPDB_KEY。',
-                 '  Optional extended fields: PROXYDOCTOR_IPAPI_KEY; reports: PROXYDOCTOR_ABUSEIPDB_KEY.'),flush=True)

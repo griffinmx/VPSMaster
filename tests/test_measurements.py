@@ -178,21 +178,23 @@ def test_media_console_failure_does_not_abort_other_services(monkeypatch,capsys)
     monkeypatch.setattr(media,'SERVICES',{'Netflix':None,'Spotify':None})
     def check(name):
         if name=='Netflix': raise RuntimeError('private response data')
-        return {'state':'restricted','http':200,'evidence':'confirmed_explicit_region_message'}
-    monkeypatch.setattr(media,'check',check)
+        return {'state':'access_denied','http':403,'evidence':'http_response'}
+    monkeypatch.setattr(media,'check_reachability',check)
     results=media.run_console('en','always')
     output=capsys.readouterr().out
-    assert len(results)==2 and '\x1b[31m' in output
+    assert len(results)==2 and '\x1b[33m' in output
+    assert 'Access denied' in output
     assert 'private response data' not in output
 
 
 def test_offline_json_stays_local_and_cannot_overwrite(tmp_path):
     from proxydoctor.suite import run_suite
     path=tmp_path/'result.json'
-    assert run_suite(offline=True,json_output=path)==0
+    import platform
+    assert run_suite(offline=True,json_output=path)==(0 if platform.system()=='Linux' else 1)
     result=json.loads(path.read_text(encoding='utf-8'))
     assert result['offline'] and result['bandwidth'] is None and result['media']=={}
-    assert result['result']=='local_execution_complete'
+    assert result['result']==('local_execution_complete' if platform.system()=='Linux' else 'incomplete')
     original=path.read_bytes()
     with pytest.raises(FileExistsError): run_suite(offline=True,json_output=path)
     assert path.read_bytes()==original

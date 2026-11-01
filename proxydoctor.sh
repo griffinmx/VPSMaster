@@ -6,6 +6,6 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 2
 fi
 if [ "$#" -eq 0 ]; then
-  exec python3 -u -m proxydoctor suite
+  exec python3 -B -u -m proxydoctor suite
 fi
-exec python3 -u -m proxydoctor "$@"
+exec python3 -B -u -m proxydoctor "$@"

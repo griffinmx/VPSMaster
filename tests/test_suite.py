@@ -21,21 +21,22 @@ def unavailable_ip(**kwargs):
 def test_offline_suite_never_calls_network_or_providers(monkeypatch,capsys):
     def unexpected(*args,**kwargs): raise AssertionError('unexpected network/provider')
     monkeypatch.setattr(suite,'measure_bandwidth',unexpected)
-    monkeypatch.setattr(suite,'run_quality',unexpected)
+    monkeypatch.setattr('proxydoctor.connectivity.run_console',unexpected)
     monkeypatch.setattr(suite,'run_media',unexpected)
     monkeypatch.setattr(suite,'collect_ipquality',unexpected)
     monkeypatch.setattr(suite,'execute_provider',unexpected)
     monkeypatch.setattr(suite,'native_trace',unexpected)
-    assert suite.run_suite(offline=True)==0
+    import platform
+    assert suite.run_suite(offline=True)==(0 if platform.system()=='Linux' else 1)
     text=capsys.readouterr().out
     assert all(f'===== {number}.' in text for number in range(1,5))
 
 
 def test_suite_continues_when_network_and_providers_unavailable(monkeypatch,capsys):
     monkeypatch.setattr(suite,'measure_bandwidth',unavailable_bandwidth)
-    monkeypatch.setattr(suite,'run_quality',lambda *args,**kwargs: 1)
+    monkeypatch.setattr('proxydoctor.connectivity.run_console',lambda *args,**kwargs: 1)
     monkeypatch.setattr(suite.shutil,'which',lambda *args,**kwargs: None)
-    monkeypatch.setattr('proxydoctor.media.check',lambda *args: {'state':'unknown','http':403,'evidence':'playback_not_verified'})
+    monkeypatch.setattr('proxydoctor.media.check_reachability',lambda *args: {'state':'access_denied','http':403,'evidence':'http_response'})
     monkeypatch.setattr(suite,'collect_ipquality',unavailable_ip)
     monkeypatch.setattr(suite,'native_trace',lambda *args,**kwargs: 1)
     assert suite.run_suite(lang='en')==1
@@ -44,7 +45,7 @@ def test_suite_continues_when_network_and_providers_unavailable(monkeypatch,caps
     assert 'Access denied' in output
 
 
-def test_besttrace_argv_is_not_shell_interpolated(tmp_path,monkeypatch):
+def test_besttrace_is_rejected_before_execution(tmp_path,monkeypatch):
     executable=tmp_path/'best trace'
     executable.write_text('example',encoding='utf-8')
     monkeypatch.setattr(suite,'measure_bandwidth',unavailable_bandwidth)
@@ -53,8 +54,9 @@ def test_besttrace_argv_is_not_shell_interpolated(tmp_path,monkeypatch):
     monkeypatch.setattr(suite,'collect_ipquality',unavailable_ip)
     calls=[]
     monkeypatch.setattr(suite,'execute_provider',lambda argv,timeout: calls.append(argv) or 0)
-    suite.run_suite(besttrace=executable)
-    assert calls==[[str(executable.resolve()),'1.1.1.1']]
+    with pytest.raises(ValueError,match='disabled'):
+        suite.run_suite(besttrace=executable)
+    assert calls==[]
 
 
 @pytest.mark.parametrize('target',[';reboot','--help','not-a-host'])

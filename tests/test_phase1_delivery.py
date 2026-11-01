@@ -100,9 +100,9 @@ def test_suite_includes_security_network_and_route_evidence(monkeypatch,tmp_path
     from test_suite import unavailable_bandwidth,unavailable_ip
     monkeypatch.setattr(suite,'measure_bandwidth',unavailable_bandwidth)
     monkeypatch.setattr(suite,'collect_ipquality',unavailable_ip)
-    monkeypatch.setattr(suite,'run_media',lambda *args:{'Netflix':{'state':'unknown','playback':'not_tested'}})
-    def network(*args,**kwargs):kwargs['report'].update(dns={'status':'pass'},tcp=[]);return 0
-    monkeypatch.setattr(suite,'run_quality',network)
+    monkeypatch.setattr(suite,'run_media',lambda *args,**kwargs:kwargs['results'].update(Netflix={'state':'unknown','playback':'not_tested'}))
+    def network(*args,**kwargs):kwargs['report'].update(dns=[{'family':4,'status':'success'}],transports=[]);return 0
+    monkeypatch.setattr('proxydoctor.connectivity.run_console',network)
     def trace(*args,**kwargs):kwargs['records'].append({'hop':1,'ip':'8.8.8.8','latency_ms':2});return 0
     monkeypatch.setattr(suite,'native_trace',trace)
     path=tmp_path/'suite.json'
@@ -110,8 +110,8 @@ def test_suite_includes_security_network_and_route_evidence(monkeypatch,tmp_path
     result=json.loads(path.read_text(encoding='utf-8'))
     output=capsys.readouterr().out
     assert 'SSH port guard' in output and 'Local port 2222' in output
-    assert result['schema_version']==2 and result['target_port']==2222
-    assert result['network']['dns']['status']=='pass'
+    assert result['schema_version']==3 and result['target_port']==2222
+    assert result['network']['dns'][0]['status']=='success'
     assert result['route']['state']=='reached'
     assert result['route']['hops'][0]['ip']!='8.8.8.8'
     assert result['summary']['playback']=='not_tested'
