@@ -10,9 +10,9 @@ VPS Diagnostics & Security Toolkit — an open-source Linux VPS diagnostics and 
 
 ## About
 
-Built with Python for VPS beginners and Linux users, VPSMaster helps explain server resources, connectivity, IP information and basic security risks. Beta.1 provides CLI diagnostics and local reports. Default diagnostics are read-only and do not modify SSH, firewall, routes or system DNS.
+VPSMaster helps Linux users and VPS beginners understand server resources, connectivity, IP information and basic security risks. **v1.0.0-beta.1** provides CLI diagnostics and local reports. Default checks are read-only and do not change SSH, firewall, routes or system DNS.
 
-The project aims to grow into a Linux security diagnostics and hardening assistant, with SSH/firewall hardening, configuration backup and rollback, continuous security monitoring and a local Web UI as future priorities.
+The project will grow toward server management: improved diagnostics, configuration backup and recovery, optional proxy deployment, security hardening and a local Web UI. These management capabilities are future plans, not current Beta features.
 
 ## Features
 
@@ -20,85 +20,99 @@ The project aims to grow into a Linux security diagnostics and hardening assista
 | --- | --- |
 | Server | Linux, CPU, memory, swap, disk capacity, virtualization and resource observations |
 | Network | DNS, TCP/TLS, IPv4/IPv6 and UDP/ICMP/TCP traceroute |
-| Routing & IP | BGP, ASN, ownership, network types and provider-specific risk observations |
-| Services | Basic public-page reachability for selected media services |
+| Routing & IP | BGP, ASN, ownership, network types and provider-specific risk information |
+| Services | Public-page reachability for selected media services |
 | Security | Read-only SSH, port, firewall and file-permission checks |
-| Reports | Chinese/English CLI, local JSON/Markdown, redaction and interruption recovery |
+| Reports | Chinese/English CLI, JSON/Markdown, redaction and interruption recovery |
 
-## Install
+## Install from public GitHub
 
-Requires **Linux, Python 3.10+ and standard-library venv**. Download the ZIP and matching `SHA256SUMS.txt` from [Releases](https://github.com/griffinmx/VPSMaster/releases) into the same directory. During private testing, access is restricted; a release draft is not a generally available published download.
+Requires **Linux, Python 3.10+, standard-library venv and Git**. Ubuntu 22.04 / 24.04 is recommended.
 
 ```bash
-sha256sum -c SHA256SUMS.txt
-python3 -m zipfile -e VPSMaster-v1.0.0-beta.1.zip .
-cd VPSMaster-v1.0.0-beta.1
+git clone https://github.com/griffinmx/VPSMaster.git
+cd VPSMaster
 python3 -I -B install.py --run
 ```
 
-The installer creates an isolated user environment and prints the launcher path. The first scan is offline. Root is not required; the installer invokes neither pip, sudo nor a system package manager. Missing dependencies produce an error without changing the system. [Installation guide](docs/guide/INSTALL.md)
+The installer verifies the manifest, creates an isolated user environment and runs an **offline** check. It requires no root and invokes neither pip, sudo nor a package manager. Default location: `~/.local/share/vpsmaster/1.0.0b1/`.
+
+Start the online scan separately:
+
+```bash
+~/.local/share/vpsmaster/1.0.0b1/bin/vpsmaster all --lang en
+```
+
+The online scan saves local reports and has a default 300-second budget. Missing permissions, tools or reachable targets can yield unknown/skipped/incomplete results without a program crash. [Install/update/uninstall](docs/guide/INSTALL.md)
 
 ## One-command diagnostics
 
-Start with **`vpsmaster all`**: live module progress, results, a final summary and recoverable redacted reports, using the existing suite scheduler.
-
-Use the launcher printed by the installer, or define this alias in your current shell:
+Optionally define an alias in your current shell:
 
 ```bash
 alias vpsmaster="$HOME/.local/share/vpsmaster/1.0.0b1/bin/vpsmaster"
-vpsmaster all
+vpsmaster all --lang zh
 vpsmaster all --lang en
-vpsmaster all --offline
-vpsmaster all --full --allow-bandwidth
+vpsmaster all --offline --lang en
+vpsmaster all --full --lang en
 ```
 
-Default scope includes system/resources/interfaces, DNS/TCP/TLS, UDP and optional ICMP/TCP traces, IP/ASN/BGP, public pages and basic security. Missing dependencies, permissions and timeouts retain their reasons. Default limits: 300 seconds total, 60 per module; full mode allows 600 total. No CPU/disk benchmarks run.
+`all` reuses existing modules and shows live progress and a final summary. It covers resources/interfaces, DNS/TCP/TLS, UDP and available ICMP/TCP, IP/ASN/BGP, pages and basic security. Unknown is not success. Default limits: 300 seconds total, 60 per module; full mode allows 600 total.
 
-`--full` adds PTR/TCP25 and China-destination traces. Bandwidth requires separate `--allow-bandwidth` consent and has a 64 MiB test-payload cap. Mainland speed candidates require the separate experimental `--china-speed` switch. [Options and limits](docs/guide/USAGE.md)
+`--full` adds PTR/TCP25 and bounded China-destination traces. Bandwidth needs separate `--allow-bandwidth` consent, with a 64 MiB test-payload cap. Mainland speed candidates additionally need experimental `--china-speed`. No bandwidth, CPU or disk benchmark runs by default. [Full usage](docs/guide/USAGE.md)
 
 ## Common commands
 
-Use the printed launcher path for custom installations; the default is:
+Use the printed launcher path for custom installations.
 
 ```bash
 VM="$HOME/.local/share/vpsmaster/1.0.0b1/bin/vpsmaster"
+"$VM" all --lang en
+"$VM" all --offline --lang en
 "$VM" check --lang en
-"$VM" suite --offline --lang en
 "$VM" quality --lang en
 "$VM" trace --target 1.1.1.1 --method udp
 "$VM" ipquality
+"$VM" bgp --target 1.1.1.1
 "$VM" suite --json-output report.json
 "$VM" report --input report.json --output report.md
 "$VM" --help
 ```
 
-The legacy `proxydoctor` command remains compatible. See [usage](docs/guide/USAGE.md) for full options and opt-in bandwidth tests. Remote services see your source IP; review redacted reports before sharing.
+The legacy `proxydoctor` command remains supported. External services see your source IP; inspect reports before sharing.
 
-## Beta limitations
+## FAQ and limits
 
-- Media checks test page reachability, not unlocking or playback. Mainland three-carrier bandwidth tests are experimental and off by default.
-- ICMP/TCP may require system `traceroute` and permissions. BGP, geography and risk observations depend on third-party data.
-- Lab coverage: Ubuntu 22.04 Desktop and 24.04 Server, x86_64. Overseas VPS, ARM, public IPv6 and a fresh Ubuntu 22.04 Server image are not comprehensively validated.
-- No one-click hardening, automatic proxy deployment or Web UI. Beta does not imply production stability or independent security certification.
+- A Git proxy is not automatically used by VPSMaster; some probes connect directly. DNS success does not imply TCP/TLS success.
+- A Linux text console may lack Chinese fonts. Use a suitable UTF-8 SSH terminal or `--lang en`.
+- Media checks mean public-page reachability, not unlocking or playback. Mainland carrier tests remain experimental/off by default.
+- ICMP/TCP may need system `traceroute` and permissions. BGP, location and risk data depend on third parties.
+- Main lab coverage is Ubuntu22 Desktop/Ubuntu24 Server, x86_64. Overseas VPS, ARM, public IPv6 and more fresh images are not comprehensively validated.
+- No automatic proxy deployment, hardening, configuration rollback or Web UI exists in this Beta. It is not production stability or independent security certification.
+- Redaction is not an arbitrary-text anonymizer; review IP/topology and other sensitive information before sharing.
 
-[Detailed limitations](docs/release/KNOWN_LIMITATIONS.md) · [Release notes](docs/release/RELEASE_NOTES.md)
+[Detailed limits](docs/release/KNOWN_LIMITATIONS.md) · [Release notes](docs/release/RELEASE_NOTES.md)
 
-## Roadmap
+## Five-phase roadmap
 
 | Phase | Direction | Status |
 | --- | --- | --- |
-| 1 · VPS diagnostics | Resources, connectivity, routes, BGP/IP, basic security and recoverable reports | Current Beta foundation |
-| 2 · Improve diagnostics | CPU/disk benchmarks, mainland carrier tests, IP cross-checking, routing advice, security baselines and purchase acceptance | Planned |
-| 3 · Security hardening | SSH/key policies, UFW/nftables, Fail2ban, updates and permissions, with selectable plans and previews | Planned; future priority |
-| 4 · Backup, rollback & monitoring | Configuration backups/diffs, SSH access protection, verification, conditional rollback, auditing and monitoring | Planned |
-| 5 · Visual management | Local Web UI, risks/tasks, recovery, multiple VPS and optional service management | Long-term plan |
+| 1 · Comprehensive VPS diagnostics | Resources, connectivity, routes, BGP/IP, basic security and local recoverable reports | Current Beta foundation |
+| 2 · Better diagnostics and backup/rollback | Clearer CLI reports, CPU/disk benchmarks, carrier tests, IP cross-checking, routing advice, security baselines, snapshots/diffs and basic recovery | Planned |
+| 3 · One-click proxy deployment | Common protocols, installation/configuration, health, updates/uninstall, then domains/certificates/subscriptions | Planned |
+| 4 · One-click security hardening | SSH/key policies, UFW/nftables, Fail2ban, updates/permissions/ports; plans, previews, verification and conditional rollback | Future priority |
+| 5 · Web UI and server management | Local dashboard, reports/risks, backups/recovery, multiple VPS and optional services | Long-term plan |
 
-Future hardening requires explicit confirmation: **detect → explain → preview → confirm → back up → execute → verify → roll back**. Protecting SSH access is essential; rollback cannot cover every outage. A future management UI must not expose its entry point publicly by default.
+Phase 2 builds verifiable backup/recovery foundations alongside diagnostic improvements. Phase 3 prioritizes basic deployments without a domain before domain/certificate-based configurations, with secure configuration and service lifecycle handling.
 
-Future capabilities are not implemented or included in this Beta, and have no fixed delivery dates. [Detailed roadmap](docs/security/ROADMAP.md)
+Phase 4 requires explicit confirmation for changes affecting SSH, firewall or access: **detect → explain → preview → confirm → back up → execute → verify → roll back**. Protect management connections and business ports; rollback cannot cover every outage, cloud firewall, reboot or host failure.
 
-## Documentation & contributing
+A future local Web UI must not expose its management entry point publicly by default; authentication, authorization and credential protection are essential. **Phases 2–5 are plans, not implemented Beta.1 capabilities, and have no fixed release dates.** [Detailed roadmap](docs/security/ROADMAP.md)
 
-[Usage](docs/guide/USAGE.md) · [中文首页](README.md) · [Installation](docs/guide/INSTALL.md) · [Limitations](docs/release/KNOWN_LIMITATIONS.md) · [Roadmap](docs/security/ROADMAP.md)
+## Documentation and contributing
 
-[Documentation](docs/README.md) · [Security/privacy](docs/security/SECURITY.md) · [Issues](https://github.com/griffinmx/VPSMaster/issues) · [Contributing](docs/development/CONTRIBUTING.md) · [MIT License](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+[Usage](docs/guide/USAGE.md) · [中文首页](README.md) · [Installation](docs/guide/INSTALL.md) · [Limits](docs/release/KNOWN_LIMITATIONS.md) · [Roadmap](docs/security/ROADMAP.md)
+
+[Docs](docs/README.md) · [Security/privacy](docs/security/SECURITY.md) · [Issues](https://github.com/griffinmx/VPSMaster/issues) · [Contributing](docs/development/CONTRIBUTING.md) · [MIT License](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+
+Please share reproducible, redacted feedback. Never upload passwords, tokens, SSH private keys or unchecked raw reports to public Issues.

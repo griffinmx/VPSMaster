@@ -26,4 +26,4 @@
 - Bandwidth `attempted` counts scheduled sample slots, including automatically
   skipped slots; it is not an actual network-request counter. Inspect sample errors.
 
-当前不具备一键安全加固或自动修复。未来遵循检测→解释→预览→确认→备份→执行→验证→回滚；回滚不能覆盖所有断网/重启/云安全组/宿主机故障。本轮只更新路线与私有发布准备。
+当前不具备一键安全加固或自动修复。未来遵循检测→解释→预览→确认→备份→执行→验证→回滚；回滚不能覆盖所有断网/重启/云安全组/宿主机故障。未来阶段以[当前五阶段路线](../security/ROADMAP.md)为准。
