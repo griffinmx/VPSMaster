@@ -39,6 +39,9 @@ def normalize_report(report):
         for i,item in enumerate(route.get('hops',[])):
             add(f'route.hop.{i}','route','success' if item.get('state') in ('reply','reached') else 'unknown',
                 'single_'+route.get('method','udp')+'_probe',item.get('ip'),item,limitations=['One probe per TTL; response loss is not forwarding loss.'])
+    for method,item in report.get('additional_routes',{}).items():
+        add('route.'+method,'route','success' if item.get('state')=='reached' else 'skipped' if item.get('state')=='dependency_missing' else 'unknown',
+            method+'_trace',item.get('target'),item,item.get('error_code'),['Router silence is not forwarding loss.'])
     for name in ('bgp','carrier_nodes','return_routes'):
         item=report.get(name)
         if item:

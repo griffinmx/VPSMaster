@@ -25,7 +25,8 @@ def execute_provider(argv, timeout=180):
 
 def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttrace=None,
               region_script=None,max_hops=30,geo=True,color='auto',bandwidth_rounds=3,skip_route=False,json_output=None,bandwidth_sources=None,port=8388,show_ip=False,ip_enrichment=True,allow_bandwidth=False,mail_probes=False,route_probes=3,theme='default',
-              route_method='udp',tcp_port=443,include_return_routes=False,include_bgp=False,show_unavailable=False):
+              route_method='udp',tcp_port=443,include_return_routes=False,include_bgp=False,show_unavailable=False,
+              comprehensive=False,total_timeout=300,module_timeout=60):
     from .cli import redact
     from .console import Console
     import re
@@ -37,6 +38,10 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
     if route_method not in ('udp','icmp','tcp') or not 1<=tcp_port<=65535 or theme not in ('default','iprisk','framed'):
         raise ValueError('Invalid route or theme options')
     out=Console(lang,color,hide_unavailable=not show_unavailable); tr=out.text
+    out.wrap_output=comprehensive
+    started=time.monotonic()
+    if comprehensive:include_bgp=True
+    if comprehensive and not (30<=total_timeout<=900 and 5<=module_timeout<=120):raise ValueError('Invalid all time budget')
     iprisk = theme == 'iprisk'
     framed = theme == 'framed'
     from datetime import datetime,timezone
@@ -82,7 +87,30 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
     def module_error(name):
         out.row(name, tr('本模块异常，继续其他检测（MODULE_ERROR）','Module failed; continuing other checks (MODULE_ERROR)'),'bad')
 
-    runner = ModuleRunner(report, checkpoint, module_error)
+    labels={'system':('系统与接口','System and interfaces'),'resources':('资源状态','Resources'),
+            'security':('安全体检','Security'),'bandwidth':('带宽','Bandwidth'),'network':('DNS / TCP / TLS','DNS / TCP / TLS'),
+            'ip_quality':('IP 信息','IP information'),'route':('UDP 路由','UDP route'),
+            'route_icmp':('ICMP 路由','ICMP route'),'route_tcp':('TCP 路由','TCP route'),
+            'media':('网页可达性','Page reachability'),'bgp':('ASN / BGP','ASN / BGP'),'return_routes':('中国方向追踪','China destination routes')}
+    planned=8+(3 if comprehensive else int(include_bgp))+int(include_return_routes)
+    completed=0
+    def progress(name,state,finished):
+        nonlocal completed
+        title=tr(*labels.get(name,(name,name)))
+        if finished:
+            completed+=1
+            status=state['status']
+            out.row(tr('进度','Progress'),f'{completed}/{planned} '+title+' · '+status+
+                    (' · '+str(state.get('error_code') or state.get('reason')) if state.get('error_code') or state.get('reason') else ''),
+                    'bad' if status=='failure' else 'ok' if status=='success' else 'unknown')
+        else:out.row(tr('正在执行','Running'),f'{completed}/{planned} · '+title,'title')
+    if comprehensive:
+        report['command']='all'
+        report['limits']={'total_seconds':total_timeout,'module_seconds':module_timeout,'concurrency':1,'bandwidth_payload_max_mib':64}
+        out.row(tr('检测预算','Time budget'),f'{total_timeout}s / module {module_timeout}s','title')
+    runner = ModuleRunner(report, checkpoint, module_error,observe=progress if comprehensive else None,
+                          deadline=started+total_timeout if comprehensive else None,
+                          module_timeout=module_timeout if comprehensive else None)
 
     def heading(number, zh, en, kind='b_cyan'):
         if iprisk:
@@ -122,6 +150,15 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
             if key=='ssh' and item['status']=='warn': value=tr('允许 root 或密码认证','Root or password auth allowed')
             out.row(tr(zh,en),value,'bad' if item['status'] in ('warn','fail') else 'ok' if item['status']=='pass' else 'unknown')
         out.row('CPU benchmark',tr('未运行：常规检测不执行性能基准','Not run: routine checks do not benchmark CPU'),'unknown')
+        if comprehensive:
+            for key in ('interfaces','addresses'):
+                item=checks.get(key)
+                if item:out.row(tr('网络接口','Interfaces'),item.get('evidence',''),'unknown')
+            from .worker import local_command
+            tool=shutil.which('systemd-detect-virt',path='/usr/bin:/bin')
+            code,value,error=local_command([tool],timeout=3) if tool else (None,'','COMMAND_UNAVAILABLE')
+            report['virtualization']={'value':value.strip() if code==0 else None,'method':'systemd-detect-virt','error_code':error if code else None}
+            out.row(tr('虚拟化','Virtualization'),value.strip() if code==0 else tr('未确认','Unconfirmed'),'ok' if code==0 else 'unknown')
 
     def collect_bandwidth():
         nonlocal data, incomplete
@@ -243,10 +280,23 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
         if not address:
             report['bgp']={'status':'unknown','error_code':'EGRESS_IP_UNAVAILABLE'}
             out.row('BGP','EGRESS_IP_UNAVAILABLE','unknown');incomplete=True
-            return
+            return {'status':'unknown','error_code':'EGRESS_IP_UNAVAILABLE'}
         report['bgp']={}
         collect(address,report['bgp'],checkpoint);render(report['bgp'],out)
         incomplete=report['bgp']['status']!='success' or incomplete
+
+    def additional_route(method):
+        nonlocal incomplete
+        route={'target':route_target,'method':method,'hops':[]}
+        report.setdefault('additional_routes',{})[method]=route
+        protocol_trace(route_target,method=method,tcp_port=tcp_port,hops=max_hops,lang=lang,
+                       geo=False,emit=lambda text,**kw:out.line(text,'unknown'),records=route['hops'],
+                       summary=route,on_result=checkpoint,deadline=time.monotonic()+module_timeout)
+        state=route.get('state')
+        if state!='reached':
+            incomplete=True
+            status='skipped' if state=='dependency_missing' else 'unsupported' if state=='unsupported' else 'unknown'
+            return {'status':status,'error_code':route.get('error_code') or 'ROUTE_INCOMPLETE'}
 
     cancelled = False
     try:
@@ -264,6 +314,9 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
             heading(3,'路由追踪','Route trace')
             out.row(tr('路由','Route'),tr('已跳过','Skipped'),'unknown')
         runner.run('route', collect_route, 'offline' if offline else 'user_skipped' if skip_route else None)
+        if comprehensive:
+            for method in ('icmp','tcp'):
+                runner.run('route_'+method,lambda m=method:additional_route(m),'offline' if offline else 'user_skipped' if skip_route else None)
         if offline and show_unavailable:
             heading(4,'流媒体可达性','Media reachability')
             out.row(tr('流媒体','Media'),tr('离线跳过','Skipped offline'),'unknown')
@@ -276,7 +329,7 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
         cancelled = True
     finally:
         report['finished_at'] = utc_now()
-        failed = any(item['status'] == 'failure' for item in report['modules'].values())
+        failed = any(item['status'] in ('failure','unknown','unsupported') or item.get('reason')=='TOTAL_TIME_BUDGET' for item in report['modules'].values())
         report['result'] = 'cancelled' if cancelled else 'incomplete' if incomplete or failed else 'local_execution_complete'
         report['summary'] = {
             'playback': 'not_tested',
@@ -287,11 +340,18 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
                                  for item in report['media'].values())
                       for state in ('reachable','access_denied','rate_limited','http_error','unknown')},
         }
+        if comprehensive:
+            from collections import Counter
+            report['summary']['module_counts']=dict(Counter(item['status'] for item in report['modules'].values()))
+            report['summary']['module_count_note']='Execution success does not imply target availability or safety.'
         from .schema import normalize_report
         normalize_report(report)
         saved = store.finish(report)
         store.close()
     out.row(tr('体检结果','Results'), report['result'], 'unknown' if cancelled or incomplete or failed else 'ok')
+    if comprehensive:
+        from .overview import render_summary
+        render_summary(report,out)
     if saved and not store.failed:
         out.row(tr('脱敏报告','Redacted report'), str(store.path))
     else:

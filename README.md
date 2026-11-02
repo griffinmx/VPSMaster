@@ -38,6 +38,24 @@ python3 -I -B install.py --run
 
 安装器在用户目录创建隔离环境，输出可执行入口路径；首次运行离线体检，不要求 root，也不调用 pip、sudo 或系统包管理器。缺少依赖时明确退出，不擅自修改系统。[安装、升级与卸载](docs/guide/INSTALL.md)
 
+## 一键综合检测
+
+新用户推荐入口：**`vpsmaster all`**。复用现有检测模块，实时显示正在执行的模块、完成数量、结果与最终汇总，并自动保存脱敏报告。
+
+安装器会打印启动器路径；默认安装可在当前终端设置别名后使用：
+
+```bash
+alias vpsmaster="$HOME/.local/share/vpsmaster/1.0.0b1/bin/vpsmaster"
+vpsmaster all
+vpsmaster all --lang zh
+vpsmaster all --offline
+vpsmaster all --full --allow-bandwidth
+```
+
+默认检测系统与资源、接口、DNS/TCP/TLS、UDP 与条件允许时的 ICMP/TCP、IP/ASN/BGP、网页可达性和基础安全。缺依赖、权限不足或超时记录原因后继续。默认总预算300秒、每模块60秒；完整模式总预算600秒，仍无 CPU/磁盘负载基准。
+
+`--full` 增加 PTR/TCP25 与中国目标方向追踪；带宽需 `--allow-bandwidth`，测试载荷上限64 MiB。大陆测速候选另需实验性 `--china-speed`，不会默认启用。[全部选项与边界](docs/guide/USAGE.md)
+
 ## 常用命令
 
 默认安装使用下面的入口；自定义目录请使用安装器打印的路径。

@@ -38,6 +38,24 @@ python3 -I -B install.py --run
 
 The installer creates an isolated user environment and prints the launcher path. The first scan is offline. Root is not required; the installer invokes neither pip, sudo nor a system package manager. Missing dependencies produce an error without changing the system. [Installation guide](docs/guide/INSTALL.md)
 
+## One-command diagnostics
+
+Start with **`vpsmaster all`**: live module progress, results, a final summary and recoverable redacted reports, using the existing suite scheduler.
+
+Use the launcher printed by the installer, or define this alias in your current shell:
+
+```bash
+alias vpsmaster="$HOME/.local/share/vpsmaster/1.0.0b1/bin/vpsmaster"
+vpsmaster all
+vpsmaster all --lang en
+vpsmaster all --offline
+vpsmaster all --full --allow-bandwidth
+```
+
+Default scope includes system/resources/interfaces, DNS/TCP/TLS, UDP and optional ICMP/TCP traces, IP/ASN/BGP, public pages and basic security. Missing dependencies, permissions and timeouts retain their reasons. Default limits: 300 seconds total, 60 per module; full mode allows 600 total. No CPU/disk benchmarks run.
+
+`--full` adds PTR/TCP25 and China-destination traces. Bandwidth requires separate `--allow-bandwidth` consent and has a 64 MiB test-payload cap. Mainland speed candidates require the separate experimental `--china-speed` switch. [Options and limits](docs/guide/USAGE.md)
+
 ## Common commands
 
 Use the printed launcher path for custom installations; the default is:
