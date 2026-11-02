@@ -142,6 +142,7 @@ def _main():
     suite.add_argument('--no-geo',action='store_true',help=st('不查询路由 IP 位置','Skip route IP geolocation lookups'))
     suite.add_argument('--color',choices=('auto','always','never'),default='auto')
     suite.add_argument('--theme', choices=('default','iprisk','framed'), default='default', help=st('终端版式：default/iprisk/framed','Terminal theme: default/iprisk/framed'))
+    suite.add_argument('--show-unavailable', action='store_true', help=st('显示无数据与跳过的条目（完整报告始终保留）','Show unavailable/skipped rows (always retained in reports)'))
     suite.add_argument('--route-method',choices=('udp','icmp','tcp'),default='udp')
     suite.add_argument('--tcp-port',type=int,default=443)
     suite.add_argument('--china-speed',action='store_true',help=st('启用大陆三运营商候选测速；仍需 --allow-bandwidth','Select mainland carrier speed candidates; requires --allow-bandwidth'))
@@ -279,7 +280,7 @@ def _main():
                            max_hops=args.max_hops,geo=not args.no_geo,color=args.color,
                            bandwidth_rounds=args.bandwidth_rounds,skip_route=args.skip_route,json_output=args.json_output,
                            bandwidth_sources=args.bandwidth_source or (CHINA_SOURCES if args.china_speed else None),port=args.port,show_ip=args.show_ip,ip_enrichment=not args.no_ip_enrichment,allow_bandwidth=args.allow_bandwidth,mail_probes=args.mail_probes,route_probes=args.route_probes,theme=args.theme,
-                           route_method=args.route_method,tcp_port=args.tcp_port,include_return_routes=args.include_return_routes,include_bgp=args.include_bgp)
+                           route_method=args.route_method,tcp_port=args.tcp_port,include_return_routes=args.include_return_routes,include_bgp=args.include_bgp,show_unavailable=args.show_unavailable)
         except OSError:
             parser.error(st('无法保存报告，请检查输出目录和文件权限','Unable to save report; check the output directory and file permissions'))
         sys.exit(code)

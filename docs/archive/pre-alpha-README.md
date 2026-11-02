@@ -1,12 +1,12 @@
-> 历史记录 / Historical record：ProxyDoctor 是项目旧名。以下旧版本、SHA256、测试数量与路径保留原样，不代表 VPSMaster 新构建已通过；当前范围见 README.md、CURRENT_STATUS.md 和新包同 SHA256 验收报告。
+> 历史材料：版本、测试数量与旧路径仅说明当时状态，不是本次构建的验收证据。参见[当前发行说明](../release/RELEASE_NOTES.md)。
 
-最新逐类完成情况和未完成重点见 [当前进度](CURRENT_STATUS.md)。新增双栈 DNS/TCP/TLS 已接入 suite/quality，尚未验证。
+最新逐类完成情况和未完成重点见 [当前进度](README.md)。新增双栈 DNS/TCP/TLS 已接入 suite/quality，尚未验证。
 
 # 当前开发范围（2026-11-01）
 
 资源首页优先显示本进程 CPU 上限、可见内存限额及其依据。已识别的容器如果没有可读限额，不以宿主机总内存充当自己的额度。系统原始值保留在 JSON 详细依据中；CPU/内存是否独享统一标注“无法从本机确认”。容器识别仍有遗漏可能，KVM 中的系统可见内存也不等于已验证商家独享保障。此轮显示调整未测试。
 
-本分支按新的 [开发任务书](DEVELOPMENT_BRIEF.zh.md) 推进独立 Python VPS 综合诊断 CLI。代理部署、Web UI 不在当前范围。下面原 0.5.0 说明保留作背景；最新实际状态以 [问题追踪](PROBLEM_BACKLOG.md)、[架构](ARCHITECTURE.md)、[源码研究](OPEN_SOURCE_RESEARCH.md)、[测试计划](TEST_PLAN.md) 和 [更新记录](CHANGELOG.md) 为准。
+本分支按新的 [开发任务书](README.md) 推进独立 Python VPS 综合诊断 CLI。代理部署、Web UI 不在当前范围。下面原 0.5.0 说明保留作背景；最新实际状态以 [问题追踪](README.md)、[架构](ARCHITECTURE-alpha.md)、[源码研究](OPEN_SOURCE_RESEARCH.md)、[测试计划](TEST_PLAN-alpha.md) 和 [更新记录](../release/CHANGELOG.md) 为准。
 
 常规 `bash proxydoctor.sh` / `proxydoctor suite` 默认跳过 CPU 和带宽基准。需要测速时，使用 `proxydoctor bandwidth --allow-bandwidth` 或 `proxydoctor suite --allow-bandwidth`；执行前显示请求载荷预算，协议开销与其他模块流量另计。`proxydoctor suite --offline` 跳过联网。第三方脚本/可执行文件包装入口暂时禁用。
 
@@ -16,7 +16,7 @@
 
 # ProxyDoctor
 
-[中文](README.md) | [English](README.en.md)
+[中文](../README.md) | [English](../../README.en.md)
 
 面向 Ubuntu VPS 新手的原生 Python 只读诊断工具。支持 Ubuntu 22.04 及更新版本；
 当前优先验收 22.04、24.04，其他版本逐步实测。Python 3.10+，没有第三方运行依赖。
@@ -148,7 +148,7 @@ python3 -m venv .venv
 Ubuntu 若未安装 venv 支持，需另行安装系统对应组件；程序不会自动安装。
 开发测试：`python -m pip install pytest` 后 `python -m pytest -q`。
 GitHub Actions 配置已提供，未发布仓库前不宣称远程 CI 已运行。
-贡献规范见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全反馈见 [SECURITY.md](SECURITY.md)。
+贡献规范见 [CONTRIBUTING.md](../development/CONTRIBUTING.md)，安全反馈见 [SECURITY.md](../security/SECURITY.md)。
 
 ## 阶段一验收与后续
 
@@ -160,7 +160,7 @@ GitHub Actions 配置已提供，未发布仓库前不宣称远程 CI 已运行�
 ## 开源与来源
 
 原创代码使用 MIT 许可证。感谢 ECS、NodeQuality、NetQuality/IPQuality、NextTrace、RegionRestrictionCheck 的功能和展示设计参考；
-默认实现没有打包或复制上游脚本/数据库。来源和许可范围见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+默认实现没有打包或复制上游脚本/数据库。来源和许可范围见 [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)。
 本地第三方适配器仅在显式指定时运行，第三方行为/输出不保证只读或脱敏。
 
 数据接口：[Cloudflare](https://github.com/cloudflare/speedtest)、[OVHcloud](https://proof.ovh.net/)、
@@ -199,4 +199,4 @@ bash proxydoctor.sh recover --journal reports/example.json.events.jsonl --output
 bash proxydoctor.sh recover --journal reports/example.json.events.jsonl --output recovered.md --format markdown --lang en
 ```
 
-`--show-ip`只改变终端IP显示，文件仍脱敏。顶部是概览，详细数据源在下面。DNSBL与IPMap尚未接入，覆盖和限制见 [IP质量功能表](IPQUALITY_COVERAGE.md)。不要将来源评分或PTR/端口结果视为绝对安全/邮件可投递证明。
+`--show-ip`只改变终端IP显示，文件仍脱敏。顶部是概览，详细数据源在下面。DNSBL与IPMap尚未接入，覆盖和限制见 [IP质量功能表](../guide/IPQUALITY_COVERAGE.md)。不要将来源评分或PTR/端口结果视为绝对安全/邮件可投递证明。

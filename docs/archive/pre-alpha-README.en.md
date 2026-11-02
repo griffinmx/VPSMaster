@@ -1,10 +1,10 @@
-> 历史记录 / Historical record：ProxyDoctor 是项目旧名。以下旧版本、SHA256、测试数量与路径保留原样，不代表 VPSMaster 新构建已通过；当前范围见 README.md、CURRENT_STATUS.md 和新包同 SHA256 验收报告。
+> 历史材料：版本、测试数量与旧路径仅说明当时状态，不是本次构建的验收证据。参见[当前发行说明](../release/RELEASE_NOTES.md)。
 
-See [current status](CURRENT_STATUS.md) for implemented and outstanding work. Family-specific DNS/TCP/TLS checks now back suite/quality; untested.
+See [current status](README.md) for implemented and outstanding work. Family-specific DNS/TCP/TLS checks now back suite/quality; untested.
 
 # Current development scope (2026-11-01)
 
-This branch develops an independent Python VPS diagnostics CLI. See [backlog](PROBLEM_BACKLOG.md), [architecture](ARCHITECTURE.md), [source research](OPEN_SOURCE_RESEARCH.md), [test plan](TEST_PLAN.md), and [changelog](CHANGELOG.md). The previous 0.5.0 documentation below is historical context.
+This branch develops an independent Python VPS diagnostics CLI. See [backlog](README.md), [architecture](ARCHITECTURE-alpha.md), [source research](OPEN_SOURCE_RESEARCH.md), [test plan](TEST_PLAN-alpha.md), and [changelog](../release/CHANGELOG.md). The previous 0.5.0 documentation below is historical context.
 
 Routine `proxydoctor suite` skips CPU and bandwidth benchmarks. Consent to traffic tests with `proxydoctor bandwidth --allow-bandwidth` or `proxydoctor suite --allow-bandwidth`. The displayed payload budget excludes protocol overhead and other checks. Use `suite --offline` to skip network checks. Third-party executable/script wrappers are temporarily disabled.
 
@@ -14,7 +14,7 @@ These changes have not been tested or released. Earlier test results do not vali
 
 # ProxyDoctor
 
-[中文](README.md) | [English](README.en.md)
+[中文](../README.md) | [English](../../README.en.md)
 
 Native Python read-only VPS diagnostics for Ubuntu 22.04 and newer. Python 3.10+;
 no third-party runtime dependencies. Ubuntu 22.04/24.04 are the current acceptance
@@ -159,7 +159,7 @@ python3 -m venv .venv
 If Ubuntu lacks venv support, install its matching OS component separately;
 ProxyDoctor never installs it automatically. Development: install pytest and run
 `python -m pytest -q`. An Actions workflow is supplied; remote CI is not claimed
-before repository publication. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+before repository publication. See [CONTRIBUTING.md](../development/CONTRIBUTING.md) and [SECURITY.md](../security/SECURITY.md).
 
 ## Stage 1 and scope
 
@@ -174,7 +174,7 @@ transport. No public plaintext subscription server or automatic SSH/firewall cha
 
 Original code is MIT. Thanks to ECS, NodeQuality, NetQuality/IPQuality, NextTrace
 and RegionRestrictionCheck for feature/presentation references. No upstream script
-source/databases are bundled by the default implementation. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+source/databases are bundled by the default implementation. See [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md).
 Explicit local-script adapters are opt-in; external behavior/output may not be
 read-only or redacted.
 

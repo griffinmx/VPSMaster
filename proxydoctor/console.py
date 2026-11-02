@@ -73,8 +73,9 @@ def can_render_cjk():
 
 
 class Console:
-    def __init__(self, lang='zh', color='auto'):
+    def __init__(self, lang='zh', color='auto', hide_unavailable=False):
         self.lang = lang
+        self.hide_unavailable = hide_unavailable
         self.enabled = color == 'always' or (color == 'auto' and sys.stdout.isatty() and 'NO_COLOR' not in os.environ)
         self._framed = False  # when True, row/keyvalue/section render inside a box
 
@@ -90,6 +91,12 @@ class Console:
         return f'\033[{code}m{value}\033[0m'
 
     def row(self, label, value, status='ok'):
+        # Hide empty observations only, never a measured failure or a limitation.
+        if self.hide_unavailable and status == 'unknown' and clean(value).casefold() in {
+            'unknown', 'unavailable', 'not available', 'skipped', 'skipped offline',
+            '未知', '无法判断', '不可用', '未获取', '已跳过', '离线跳过',
+        }:
+            return
         if self._framed:
             self.frame_keyvalue(label, value, status)
             return

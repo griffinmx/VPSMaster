@@ -1,124 +1,86 @@
 # VPSMaster
 
-**VPS Diagnostics & Security Hardening Toolkit**
+**Know your VPS. Manage your server more safely.**
 
-Open-source Linux VPS diagnostics, security auditing and future safe server hardening toolkit.
+VPS Diagnostics & Security Toolkit — an open-source Linux VPS diagnostics and security management toolkit.
 
-[中文](README.md) · [English](README.en.md) · [Limitations](KNOWN_LIMITATIONS.md) · [Contributing](CONTRIBUTING.md)
+![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue) ![Linux](https://img.shields.io/badge/Platform-Linux-lightgrey) [![MIT License](https://img.shields.io/badge/License-MIT-green)](LICENSE) ![Beta.1](https://img.shields.io/badge/Status-Beta.1-orange)
 
-VPSMaster is a Python toolkit for Linux VPS users, especially beginners and the Chinese Linux community.
-The **1.0.0b1 Beta is CLI-focused**: transparent diagnostics are available; Linux security hardening, safe backup/rollback, continuous monitoring and Web UI remain planned. The aim is controlled, auditable and recoverable management.
-Routine checks do not change SSH, firewall, routes or system DNS. Missing evidence remains unknown.
+[中文首页](README.md) · [Usage](docs/guide/USAGE.md) · [Issues](https://github.com/griffinmx/VPSMaster/issues)
 
-## Available
+## About
 
-| Area | Current Beta | Boundary |
-| --- | --- | --- |
-| System/resources | OS, kernel, CPU, memory, Swap, disk capacity, visible quotas, short steal/PSI samples | No dedicated-hardware proof or CPU/disk benchmark |
-| Network | DNS, IPv4/IPv6 TCP and certificate-verified TLS, interfaces/routes | Subject to permissions, connectivity and target availability |
-| Traceroute | Native UDP; optional system ICMP/TCP; IP, RTT, timeout, optional ASN/operator/location | 30 TTLs by default, max64; router silence is not forwarding loss |
-| BGP/ASN | RIPE RIS prefixes, origins, neighbours and AS_PATH samples | Collector view, not local packet paths or commercial relationships |
-| IP risk | Provider-specific ownership, network type, proxy/VPN/Tor/risk evidence, conflicts | Quotas, missing fields and disagreement remain visible |
-| Media | Ten public service pages, including Netflix, Disney+ and YouTube | Reachability only, no unlock or account playback guarantee |
-| Security | Read-only SSH, ports, firewall, selected permissions and update caches | No full vulnerability scan or automatic repair |
-| Reports | Local redacted JSON/Markdown, recovery journals, English/Chinese themes | Review before sharing; incomplete data may remain partial |
-| Opt-in tests | Bounded repeated bandwidth and fixed China targets | Mainland three-carrier coverage is experimental, disabled by default |
+Built with Python for VPS beginners and Linux users, VPSMaster helps explain server resources, connectivity, IP information and basic security risks. Beta.1 provides CLI diagnostics and local reports. Default diagnostics are read-only and do not modify SSH, firewall, routes or system DNS.
 
-Execution success does not mean every provider or destination is available. Results retain status, method, time, source and limitations.
+The project aims to grow into a Linux security diagnostics and hardening assistant, with SSH/firewall hardening, configuration backup and rollback, continuous security monitoring and a local Web UI as future priorities.
 
-## Install and use
+## Features
 
-Requires Linux, Python3.10+ and stdlib venv. No third-party Python runtime dependencies, pip, sudo or automatic system package installation.
-Obtain the ZIP/checksum through a trusted channel and review install.py. A checksum detects change, not publisher authenticity.
+| Module | Available now |
+| --- | --- |
+| Server | Linux, CPU, memory, swap, disk capacity, virtualization and resource observations |
+| Network | DNS, TCP/TLS, IPv4/IPv6 and UDP/ICMP/TCP traceroute |
+| Routing & IP | BGP, ASN, ownership, network types and provider-specific risk observations |
+| Services | Basic public-page reachability for selected media services |
+| Security | Read-only SSH, port, firewall and file-permission checks |
+| Reports | Chinese/English CLI, local JSON/Markdown, redaction and interruption recovery |
+
+## Install
+
+Requires **Linux, Python 3.10+ and standard-library venv**. Download the ZIP and matching `SHA256SUMS.txt` from [Releases](https://github.com/griffinmx/VPSMaster/releases) into the same directory. During private testing, access is restricted; a release draft is not a generally available published download.
 
 ```bash
-sha256sum -c VPSMaster-v1.0.0-beta.1.zip.sha256
+sha256sum -c SHA256SUMS.txt
 python3 -m zipfile -e VPSMaster-v1.0.0-beta.1.zip .
 cd VPSMaster-v1.0.0-beta.1
 python3 -I -B install.py --run
+```
+
+The installer creates an isolated user environment and prints the launcher path. The first scan is offline. Root is not required; the installer invokes neither pip, sudo nor a system package manager. Missing dependencies produce an error without changing the system. [Installation guide](docs/guide/INSTALL.md)
+
+## Common commands
+
+Use the printed launcher path for custom installations; the default is:
+
+```bash
 VM="$HOME/.local/share/vpsmaster/1.0.0b1/bin/vpsmaster"
-"$VM" --version
-"$VM" check --theme framed --lang en
+"$VM" check --lang en
 "$VM" suite --offline --lang en
 "$VM" quality --lang en
-"$VM" trace --target 1.1.1.1 --method tcp --tcp-port 443 --geo --lang en
-"$VM" bgp --target 1.1.1.1 --lang en
-"$VM" media --lang en
-"$VM" suite --lang en --json-output report.json
-"$VM" report --input report.json --output report.md --lang en
-"$VM" recover --journal report.json.events.jsonl --output recovered.json --lang en
+"$VM" trace --target 1.1.1.1 --method udp
+"$VM" ipquality
+"$VM" suite --json-output report.json
+"$VM" report --input report.json --output report.md
+"$VM" --help
 ```
 
-`--run` initially performs offline checks. Existing installation/report paths are refused; choose a new user-owned `--prefix` for a separate install.
-ICMP/TCP require an existing system traceroute and appropriate permissions. Missing dependency/permission failures are explicit; there is no automatic elevation.
-Online commands contact external services, which see the source IP. `check` is offline unless its explicit public-IP lookup is selected.
+The legacy `proxydoctor` command remains compatible. See [usage](docs/guide/USAGE.md) for full options and opt-in bandwidth tests. Remote services see your source IP; review redacted reports before sharing.
 
-Bandwidth needs explicit consent, for example `bandwidth --allow-bandwidth --rounds 3 --sample-mib 4`.
-`--china` selects experimental mainland candidates; availability is incomplete. Hong Kong Mobile never substitutes for mainland Mobile.
-Download means node → this host, upload means this host → node. Short samples are not line capacity.
-The current `attempted` summary counts scheduled sample slots, including skipped slots, not actual wire requests; inspect sample errors.
+## Beta limitations
 
-### Compatibility
+- Media checks test page reachability, not unlocking or playback. Mainland three-carrier bandwidth tests are experimental and off by default.
+- ICMP/TCP may require system `traceroute` and permissions. BGP, geography and risk observations depend on third-party data.
+- Lab coverage: Ubuntu 22.04 Desktop and 24.04 Server, x86_64. Overseas VPS, ARM, public IPv6 and a fresh Ubuntu 22.04 Server image are not comprehensively validated.
+- No one-click hardening, automatic proxy deployment or Web UI. Beta does not imply production stability or independent security certification.
 
-Former project name: **ProxyDoctor**. New visible brand/command: **VPSMaster / vpsmaster**.
-The installer also creates the legacy `proxydoctor` launcher. Python package/distribution identity `proxydoctor`, imports, JSON schemas and `PROXYDOCTOR_*` variables remain compatible.
-New installs default to `~/.local/share/vpsmaster/1.0.0b1`; old directories/reports are not migrated or overwritten.
-Both source scripts `vpsmaster.sh` and `proxydoctor.sh` remain usable. Supplied launchers/workers use `-B`; arbitrary external imports are outside that promise.
+[Detailed limitations](docs/release/KNOWN_LIMITATIONS.md) · [Release notes](docs/release/RELEASE_NOTES.md)
 
-### Illustrative CLI output
+## Roadmap
 
-Placeholders below show structure, **not benchmark results for this build**:
+| Phase | Direction | Status |
+| --- | --- | --- |
+| 1 · VPS diagnostics | Resources, connectivity, routes, BGP/IP, basic security and recoverable reports | Current Beta foundation |
+| 2 · Improve diagnostics | CPU/disk benchmarks, mainland carrier tests, IP cross-checking, routing advice, security baselines and purchase acceptance | Planned |
+| 3 · Security hardening | SSH/key policies, UFW/nftables, Fail2ban, updates and permissions, with selectable plans and previews | Planned; future priority |
+| 4 · Backup, rollback & monitoring | Configuration backups/diffs, SSH access protection, verification, conditional rollback, auditing and monitoring | Planned |
+| 5 · Visual management | Local Web UI, risks/tasks, recovery, multiple VPS and optional service management | Long-term plan |
 
-```text
-1.0.0b1 · VPSMaster · 1.0 public beta (not the final release)
- 1  127.0.0.1    <RTT> ms    Private/reserved  AS? --- [reached]
-Trace result       reached
-Recovery journal: <local path>
-```
+Future hardening requires explicit confirmation: **detect → explain → preview → confirm → back up → execute → verify → roll back**. Protecting SSH access is essential; rollback cannot cover every outage. A future management UI must not expose its entry point publicly by default.
 
-## Validation and limitations
+Future capabilities are not implemented or included in this Beta, and have no fixed delivery dates. [Detailed roadmap](docs/security/ROADMAP.md)
 
-Lab baselines are Ubuntu22.04.5 Desktop/Python3.10.12 and Ubuntu24.04.3 Server/Python3.12.3, x86_64.
-Each VPSMaster candidate requires fresh installation from its final ZIP; only a matching-SHA acceptance report establishes that build's pass.
-The old ProxyDoctor ZIP is preserved and cannot be renamed as proof for the new build.
-ICMP/TCP loopback success and limited public observations do not establish complete public routing.
+## Documentation & contributing
 
-- Media is public-page reachability, not unlock, paid entitlement or actual playback.
-- Mainland three-carrier speed testing is experimental and off by default.
-- BGP/geolocation depend on third-party accuracy, terms and quotas; geography is estimated.
-- Overseas VPS, ARM, public IPv6 and a fresh Ubuntu22 Server image are not comprehensively validated.
-- PTY bytes/width checks do not prove GUI font rendering. Beta is not production stability or independent security certification.
-- No Web UI, one-click hardening, automated proxy deployment, full management panel, long monitoring or CPU/disk benchmarks are currently provided.
+[Usage](docs/guide/USAGE.md) · [中文首页](README.md) · [Installation](docs/guide/INSTALL.md) · [Limitations](docs/release/KNOWN_LIMITATIONS.md) · [Roadmap](docs/security/ROADMAP.md)
 
-See [full limitations](KNOWN_LIMITATIONS.md), [status](CURRENT_STATUS.md) and [Beta notes](RELEASE_NOTES.md).
-
-## Security and privacy
-
-No default configuration changes, automatic repairs or full-report uploads. Installation creates a user venv; diagnostics/reports create local files.
-`--show-ip` affects the terminal; exported files mask known IP/credential patterns, not arbitrary identifying text. Review before sharing.
-Ctrl+C/SIGTERM attempts cancellation and persistence; recovery uses the last complete journal event. SIGKILL, power/storage failure can prevent final JSON.
-Exit codes: 0 completed, 1 findings/incomplete/storage failure, 2 usage/install error, 130 cancelled.
-Never publish raw logs, subscriptions, passwords, tokens or keys. See [SECURITY.md](SECURITY.md).
-
-## Roadmap — Planned
-
-**Trusted diagnostics now; safe Linux hardening is the future focus.** None of these plans imply current implementation or fixed delivery dates.
-
-1. **Detection:** CPU/disk benchmarks, mainland carrier coverage, network/BGP analysis, IP intelligence cross-checks, accuracy/compatibility and more security rules.
-2. **One-click hardening:** SSH/key/password policy, UFW/nftables, Fail2ban, unused services/ports, updates/patches, permissions and Linux baselines; explain risks, preview plans and let users select actions.
-3. **Backup, verification and rollback:** back up before changes, show diffs, verify alternative SSH access and preserve management channels, recheck connectivity, bounded rollback where reliable, audit logs and recovery guidance. Rollback cannot guarantee recovery from every outage, reboot, cloud firewall or host failure.
-4. **Continuous monitoring:** periodic audits, configuration drift, unusual SSH login/port changes, report history, update/risk alerts, network stability and purchase acceptance reports.
-5. **Visual security management:** local Web UI, evidence-based risk display, hardening tasks, backup/rollback interface, multi-server exploration and optional service maintenance. No public management listener by default.
-
-Future flow: **detect → explain → preview → confirm → back up → execute → verify → roll back**.
-Explicit consent, alternative SSH access, cloud-firewall awareness, business-port protection, idempotency and audit records are required. High-risk changes must not be unattended defaults; disabling protection or broadening permissions is not a repair strategy. See [SECURITY_ROADMAP.md](SECURITY_ROADMAP.md).
-
-## Contributing, Issues and license
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Use the authorized private repository’s [Issues](https://github.com/griffinmx/VPSMaster/issues) → New issue tab with the bundled [bug](.github/ISSUE_TEMPLATE/bug_report.md) or [feature](.github/ISSUE_TEMPLATE/feature_request.md) template.
-The repository is Private; public access needs owner approval. Use private channels for sensitive vulnerability reports.
-
-MIT project; former-brand contributor notices remain in [LICENSE](LICENSE).
-No third-party traceroute clients, databases or remote test scripts are bundled/executed. References/attribution are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [OPEN_SOURCE_REFERENCES.md](OPEN_SOURCE_REFERENCES.md).
-Our license does not grant rights to third-party APIs/data/test services; their terms, quotas and permissions apply separately.
-Reports do not expire automatically; review [data-service retention/sharing terms](docs/DATA_SERVICES.md), including applicable IP2Location cache limits.
+[Documentation](docs/README.md) · [Security/privacy](docs/security/SECURITY.md) · [Issues](https://github.com/griffinmx/VPSMaster/issues) · [Contributing](docs/development/CONTRIBUTING.md) · [MIT License](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)

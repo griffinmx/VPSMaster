@@ -1,13 +1,13 @@
-> 历史记录 / Historical record：ProxyDoctor 是项目旧名。以下旧版本、SHA256、测试数量与路径保留原样，不代表 VPSMaster 新构建已通过；当前范围见 README.md、CURRENT_STATUS.md 和新包同 SHA256 验收报告。
+> 历史材料：版本、测试数量与旧路径仅说明当时状态，不是本次构建的验收证据。参见[当前发行说明](RELEASE_NOTES.md)。
 
-## 1.0 公测待验收
+## 1.0.0b1 — 2026-11-01 公测候选，非最终版本
 
-当前包的 Ubuntu 安装、ICMP/TCP、三网有效下载、BGP 实网及海外三城回程均留待下一轮；本轮开发机 271 通过、1 跳过。旧 Alpha 验证仅为历史。具体步骤范围见 PUBLIC_BETA_CHANGE_REPORT.md。
+终端、语言和参数修复；流媒体改为可达性；新增可选 ICMP/TCP、三城三运营商追踪、BGP 和候选节点探测。完整大陆三网未验证。详见 [早期 Beta 变更](../archive/PUBLIC_BETA_CHANGE_REPORT.md)。
 
 
 ## v0.1.0-alpha 候选（2026-11-01）
 
-隔离离线安装、完整性拒绝、网络worker超时/取消、统一结果schema、独立模块增量保存、路由重复探测统计已实现；两版Ubuntu各248自动测试/23实际验收。全新OS镜像尚缺，建议内部试用、暂缓公开。详情见ALPHA_RELEASE_REPORT.md。无主分支合并。
+隔离离线安装、完整性拒绝、网络worker超时/取消、统一结果schema、独立模块增量保存、路由重复探测统计已实现；两版Ubuntu各248自动测试/23实际验收。全新OS镜像尚缺，建议内部试用、暂缓公开。详情见[Alpha 报告](../archive/ALPHA_RELEASE_REPORT.md)。无主分支合并。
 
 
 ## 报告与IP质量更新（2026-11-01）
@@ -17,7 +17,7 @@
 - 分享副本增加敏感键、Bearer凭证、URL用户信息/查询参数脱敏；仍需人工复核，不保证任意文本完全匿名。
 - 新增IP概览面板，CJK对齐与长行换行；多来源类型/代理/VPN/Tor证据放在下面，不合成纯净度评分。
 - 新增可选 `--mail-probes`：PTR/正向一致性、单目标出站TCP25，默认不启用，不发送邮件。DNSBL明确未查询；IPMap尚未接入。
-- 实际阅读xykt/IPQuality源码与AGPL许可，只参考需求与组织，未复制实现，详见IPQUALITY_COVERAGE.md。
+- 实际阅读xykt/IPQuality源码与AGPL许可，只参考需求与组织，未复制实现，详见[IP 功能范围](../guide/IPQUALITY_COVERAGE.md)。
 - 报告/恢复/PTR实网版本两版Ubuntu均237测试通过；最终面板加入后，两版完整离线回归均239测试通过（22：4.04秒；24：4.49秒）。报告导出、恢复JSON/Markdown、中英文离线真实CLI均退出0。IP数据不完整时退出1符合预期。
 - 实网：22的单目标出站TCP25可连接，24未确认；两台PTR未取得有效结果，不能据此判断邮件信誉。无付费API、系统依赖安装或完整报告上传。
 
@@ -37,22 +37,29 @@ DNS有结果，固定IPv4 TCP超时、IPv6不可达、TLS跳过；30跳路由未
 综合报告schema版本升为3。此前“尚未测试”的段落是编写时记录；最新验证以本节为准。
 完整日志/范围见工作区outputs/Current24-验收报告.md。Ubuntu22新版、真实VPS及未实现项目仍待验收。
 
-# 测试与验收计划
+# Changelog
 
-本轮按用户指示暂不运行测试，所有新修改标记“未验证”。历史 0.5.0 记录位于工作区 outputs，不能直接用于本分支验收。
+## Resource display correction — 2026-11-01 (untested)
 
-| 批次 | 必须验证的行为 | 方法和环境 | 当前证据 |
-|---|---|---|---|
-| P0 默认安全 | suite 默认不调用 hashlib 基准/measure_bandwidth；离线零外网；bandwidth 无许可拒绝；许可后预算显示；所有第三方包装入口拒绝 | Mock 调用计数、CLI 子进程、中文/英文；普通用户 | 新源码，未运行 |
-| P0 安全持久化 | 每模块异常继续下一模块；Ctrl+C 保留事件；权限不足/磁盘满/中断/符号链接/已有文件均不覆盖 | 临时目录与故障注入；已有 suite 回归适配 | 尚未实现 |
-| P1 资源 | cgroup v1/v2 嵌套配额/无限/缺文件；Swap/PSI/steal 采样；购买规格与实测分离 | 固定 fixture + Ubuntu 22.04 Server/24.04 Desktop | 待开发和验证 |
-| P1 网络 | 分 IPv4/IPv6，DNS 超时/拒绝/无记录，TCP/TLS/UDP 限时，NAT/多网卡，不将失败归因唯一 | Mock + 回环服务 + VM | 部分旧测试待复核 |
-| P2 路由 | 1..64 跳、v4/v6、目标不回应、中间超时不算端到端丢包、ASN 冲突、方向标记 | 固定报文 fixture + VM + 获授权公网节点 | UDP 旧用例存在，新验收待补 |
-| P2 IP/媒体 | 403/429/200登录/地区禁止/有效元数据/证据冲突；时间和来源；无密钥/错误密钥；不下载受保护内容 | 离线 fixture，必要时有限实网 | 旧用例存在；新规则不宣称验证 |
-| P3 基准监测 | 磁盘限额与清理、无裸盘写、进程超时、24/48h 中断恢复和时区、流量预算 | 先 Mock 后专用 VM，真实 VPS 须另授权 | 尚未实现 |
-| P3 发布集成 | 干净 venv 安装/更新/卸载/离线、Schema 兼容、Python API 不依赖 CLI 文本、许可清单 | Ubuntu 双版本和 CI；ARM/真实 VPS 独立记录 | 待验证 |
+Resource output now prioritizes process CPU bounds and visible cgroup memory
+limits. Raw OS CPU/RAM observations remain detailed JSON evidence rather than
+being presented as dedicated VPS capacity. Recognized containers without a
+visible memory limit show unknown allocation instead of host MemTotal. Allocation
+basis and unknown CPU/memory dedication are explicit. Container markers are
+best-effort evidence, not complete virtualization detection. No local metric
+certifies provider-side exclusive CPU or reserved memory. Added a container
+fixture case; no tests executed.
 
-每次执行记录 commit、日期、Python/OS/架构、命令、退出码、通过/失败/跳过数、脱敏日志和限制。未知不能算通过；缺海外 VPS 或 API 条件记为待实机验证。无生产测试、无付费 API、无完整报告上传、无系统依赖安装。旧测试如果断言自动测速，应改为显式传 allow_bandwidth=True，再新增默认不测速的独立断言。
+## Unreleased — 2026-11-01
+
+- 范围更新为独立 Python VPS CLI，不开发代理部署和 Web UI。
+- 按任务书逐条登记 101 项需求，记录源码、验证方法及限制。
+- 新增架构演进、五个参考项目入口源码/许可证研究和测试计划。
+- 综合流程移除自动 SHA-256 基准，默认跳过带宽测试；CLI --allow-bandwidth / Python allow_bandwidth=True 显式许可才启用测速。
+- 暂停 NodeQuality/BestTrace/RegionRestrictionCheck 包装入口，避免常规流程执行未经资源/上传审查的第三方程序。
+- 保留现有 0.5.0 代码历史，在 engineering/safe-cli-core 分支修改。
+
+验证状态：用户要求本轮可先不测试；未运行自动测试、虚拟机或实网测量。模块故障隔离、增量保存、统一结构化接口和其他 backlog 项尚未完成。版本号保持 0.5.0，未发布。
 
 
 ## Reliability batch — 2026-11-01 (implemented, untested)

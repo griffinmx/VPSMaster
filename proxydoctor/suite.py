@@ -25,7 +25,7 @@ def execute_provider(argv, timeout=180):
 
 def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttrace=None,
               region_script=None,max_hops=30,geo=True,color='auto',bandwidth_rounds=3,skip_route=False,json_output=None,bandwidth_sources=None,port=8388,show_ip=False,ip_enrichment=True,allow_bandwidth=False,mail_probes=False,route_probes=3,theme='default',
-              route_method='udp',tcp_port=443,include_return_routes=False,include_bgp=False):
+              route_method='udp',tcp_port=443,include_return_routes=False,include_bgp=False,show_unavailable=False):
     from .cli import redact
     from .console import Console
     import re
@@ -36,7 +36,7 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
     if not 1<=route_probes<=3:raise ValueError('Route probe rounds must be 1..3')
     if route_method not in ('udp','icmp','tcp') or not 1<=tcp_port<=65535 or theme not in ('default','iprisk','framed'):
         raise ValueError('Invalid route or theme options')
-    out=Console(lang,color); tr=out.text
+    out=Console(lang,color,hide_unavailable=not show_unavailable); tr=out.text
     iprisk = theme == 'iprisk'
     framed = theme == 'framed'
     from datetime import datetime,timezone
@@ -255,16 +255,16 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
         runner.run('security', collect_security)
         runner.run('bandwidth', collect_bandwidth,
                    'offline' if offline else 'consent_required' if not allow_bandwidth else None)
-        if offline:
+        if offline and show_unavailable:
             heading(2,'节点网络质量','Node network quality')
             out.row('DNS / TCP / TLS',tr('离线跳过','Skipped offline'),'unknown')
         runner.run('network', collect_network, 'offline' if offline else None)
         runner.run('ip_quality', collect_ip_quality, 'offline' if offline else None)
-        if offline or skip_route:
+        if (offline or skip_route) and show_unavailable:
             heading(3,'路由追踪','Route trace')
             out.row(tr('路由','Route'),tr('已跳过','Skipped'),'unknown')
         runner.run('route', collect_route, 'offline' if offline else 'user_skipped' if skip_route else None)
-        if offline:
+        if offline and show_unavailable:
             heading(4,'流媒体可达性','Media reachability')
             out.row(tr('流媒体','Media'),tr('离线跳过','Skipped offline'),'unknown')
         runner.run('media', collect_media, 'offline' if offline else None)
