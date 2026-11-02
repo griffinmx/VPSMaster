@@ -98,7 +98,7 @@ def fetch_page(url):
                 return None
             return super().redirect_request(req,fp,code,msg,headers,newurl)
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),SameSiteRedirect())
-    req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 ProxyDoctor/0.4','Accept-Language':'en-US,en;q=0.9','Accept-Encoding':'identity'})
+    req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 VPSMaster/1.0.0b1','Accept-Language':'en-US,en;q=0.9','Accept-Encoding':'identity'})
     try:
         response=opener.open(req,timeout=8)
     except urllib.error.HTTPError as exc:

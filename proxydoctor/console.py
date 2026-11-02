@@ -128,7 +128,7 @@ class Console:
         return f'\033[{_CODES[status]}m[{value}]\033[0m'
 
     def banner(self, text):
-        """A large ASCII-art title line, e.g. PROXYDOCTOR."""
+        """A large ASCII-art title line, e.g. VPSMASTER."""
         text = clean(text)
         if not self.enabled:
             print(text, flush=True)

@@ -63,7 +63,7 @@ def markdown(report, lang='zh'):
     rows=[['schema',report.get('schema_version')],[t('版本','Tool version'),report.get('tool_version','unknown')],
           [t('检测时间','Observation time'),report.get('generated_at',report.get('observed_at','unknown'))],
           [t('运行结果','Execution result'),report.get('result','unknown')]]
-    lines=['# '+t('VPS 检测工具 · 本地检测报告','VPS Check · local diagnostic report'),'']
+    lines=['# '+t('VPSMaster · 本地检测报告','VPSMaster · local diagnostic report'),'']
     lines += [release_label(lang),'']
     lines+=table([t('项目','Item'),t('记录','Observation')],rows)
     lines+=['',t('本报告来自已有本地记录，没有重新检测。缺失指标保持未知。',

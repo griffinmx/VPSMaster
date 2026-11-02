@@ -1,6 +1,8 @@
 # References and acknowledgements / 借鉴来源与致谢
 
-ProxyDoctor's default Python checks are independently implemented. The projects
+VPSMaster更名后保留历史版权与引用；API/数据条款及保留边界见 [docs/DATA_SERVICES.md](docs/DATA_SERVICES.md)。本项目MIT不授予第三方数据的任意再分发权。
+
+VPSMaster's default Python checks are independently implemented. The projects
 below informed the feature selection and terminal presentation. Their code is
 not bundled in this source release. Attribution does not replace license compliance:
 any future source reuse must retain the upstream notices and follow its license.

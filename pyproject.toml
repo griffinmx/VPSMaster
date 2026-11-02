@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "proxydoctor"
 version = "1.0.0b1"
-description = "Read-only Ubuntu preflight and security checks"
+description = "An open-source VPS diagnostics and management toolkit."
 readme = "README.en.md"
 license = "MIT"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
@@ -13,6 +13,7 @@ requires-python = ">=3.10"
 dependencies = []
 
 [project.scripts]
+vpsmaster = "proxydoctor.cli:main"
 proxydoctor = "proxydoctor.cli:main"
 
 [tool.setuptools.packages.find]

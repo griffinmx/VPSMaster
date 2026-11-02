@@ -38,7 +38,7 @@ def request_json(url, *, payload=None, headers=None, max_bytes=65536):
         result=invoke('json',{'url':url,'payload':payload,'headers':headers,'max_bytes':max_bytes})
         return tuple(result) if isinstance(result,list) and len(result)==2 else (None,'request_failed')
     request_headers = {'Accept': 'application/json', 'Accept-Encoding': 'identity',
-                       'User-Agent': 'ProxyDoctor/0.4'}
+                       'User-Agent': 'VPSMaster/1.0.0b1'}
     request_headers.update(headers or {})
     data = None
     if payload is not None:

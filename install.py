@@ -68,12 +68,15 @@ def install(source, prefix):
         notices.mkdir(parents=True)
         for name in ('LICENSE','THIRD_PARTY_NOTICES.md','MANIFEST.sha256.json'):
             shutil.copyfile(source/name,notices/name)
-        launcher = prefix/'bin/proxydoctor'
+        launcher = prefix/'bin/vpsmaster'
         # execv avoids shebang/path whitespace issues without shell interpolation.
         launcher.write_text('#!/bin/sh\nexec '+__import__('shlex').quote(str(python))+' -I -B -m proxydoctor "$@"\n',encoding='utf-8')
         launcher.chmod(0o700)
+        legacy_launcher = prefix/'bin/proxydoctor'
+        legacy_launcher.write_bytes(launcher.read_bytes())
+        legacy_launcher.chmod(0o700)
         subprocess.run([str(launcher),'--version'],check=True,timeout=10,capture_output=True)
-        (prefix/'proxydoctor-install.json').write_text(json.dumps({'version':VERSION,'isolated':True}),encoding='utf-8')
+        (prefix/'proxydoctor-install.json').write_text(json.dumps({'brand':'VPSMaster','package':'proxydoctor','version':VERSION,'isolated':True}),encoding='utf-8')
         return launcher
     except BaseException:
         # Only remove the new directory reserved by this invocation.
@@ -83,8 +86,8 @@ def install(source, prefix):
 
 
 def main():
-    parser=argparse.ArgumentParser(description='Offline isolated ProxyDoctor installer / 离线隔离安装')
-    parser.add_argument('--prefix',type=Path,default=Path.home()/'.local/share/proxydoctor'/VERSION)
+    parser=argparse.ArgumentParser(description='Offline isolated VPSMaster installer / VPSMaster 离线隔离安装')
+    parser.add_argument('--prefix',type=Path,default=Path.home()/'.local/share/vpsmaster'/VERSION)
     parser.add_argument('--run',action='store_true',help='Install and run a read-only offline check')
     args=parser.parse_args()
     try:
@@ -96,7 +99,7 @@ def main():
         print('Installation failed. Check Python/venv availability, release checksum and destination. No system packages were installed. / 安装失败，请检查环境、校验和与目录。',file=sys.stderr)
         return 2
     print('Installed / 已安装：'+str(launcher),flush=True)
-    print('1.0 public beta; not the final release / 1.0 公测版，非最终版本',flush=True)
+    print('VPSMaster 1.0 public beta; not the final release / VPSMaster 1.0 公测版，非最终版本',flush=True)
     if args.run:
         return subprocess.call([str(launcher),'suite','--offline'])
     return 0

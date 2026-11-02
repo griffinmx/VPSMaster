@@ -1,4 +1,4 @@
-# Known limitations — 1.0 public Beta
+# VPSMaster Known Limitations — 1.0 public Beta
 
 - Targets: Ubuntu22.04+ / Python3.10+. Available labs: existing Ubuntu22 Desktop with
   fresh HOME, Ubuntu24 Server. No new Ubuntu22 Server, overseas VPS or ARM acceptance implied.
@@ -14,6 +14,14 @@
   user venv; reports create local files; opt-in bandwidth sends bounded test payloads.
 - Sharing redacts known patterns, not arbitrary text. Review exports; raw journals,
   inventories, credentials, snapshots and backups must remain private.
+- Reports do not expire automatically. Third-party data retention/sharing terms
+  remain applicable; see docs/DATA_SERVICES.md, including IP2Location cache limits.
 - The manifest detects file changes, not publisher authenticity. Verify the ZIP
   digest through a trusted independent channel before installation.
-- Continuation files support manual restart of work, not automatic Codex scheduling.
+- Media checks cover public-page reachability only, not unlock or paid playback.
+- Mainland three-carrier speed testing is experimental and disabled by default.
+- Public IPv6 and complete public ICMP/TCP routes are not comprehensively accepted.
+- Beta is not production stability or an independent security certification.
+- No Web UI, automatic proxy deployment or full management panel is provided.
+- Bandwidth `attempted` counts scheduled sample slots, including automatically
+  skipped slots; it is not an actual network-request counter. Inspect sample errors.

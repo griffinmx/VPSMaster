@@ -73,7 +73,7 @@ def _main():
             lang = 'en'
     t = translator(lang)
     st = lambda zh, en: zh if lang == 'zh' else en
-    parser = LocalizedParser(lang=lang, description=("VPS 检测工具（只读体检）：check 默认离线；suite 会联网" if lang=='zh' else 'VPS Check (read-only diagnostics): check defaults offline; suite contacts external services'))
+    parser = LocalizedParser(prog="vpsmaster", lang=lang, description=("VPSMaster（只读体检）：check 默认离线；suite 会联网" if lang=='zh' else 'VPSMaster (read-only diagnostics): check defaults offline; suite contacts external services'))
     parser.add_argument("--version", action="version", version=__version__ + ' · ' + release_label(lang), help=t("显示版本并退出"))
     parser.add_argument("--lang", choices=("zh", "en"), default=lang, help=t("界面和报告语言：zh 中文，en 英文（默认 zh）"))
     sub = parser.add_subparsers(dest="command", required=True)
@@ -343,7 +343,7 @@ def _main():
         info_ids = {'system', 'architecture', 'kernel', 'cpu', 'memory_total', 'memory', 'disk_capacity', 'disk', 'interfaces', 'public_ip'}
         status_color = {'pass': 'ok', 'warn': 'bad', 'fail': 'bad', 'unknown': 'unknown', 'skip': 'unknown'}
         if theme == 'framed':
-            console.frame_open(st('VPS 检测报告','VPS check report'), box_w=78, subtitle=release_label(lang) + ' · ' + __version__)
+            console.frame_open(st('VPSMaster 检测报告','VPSMaster diagnostic report'), box_w=78, subtitle=release_label(lang) + ' · ' + __version__)
             # header key/values
             from datetime import datetime
             console.frame_keyvalue(st('扫描时间','Scan time'), datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'))
@@ -360,7 +360,7 @@ def _main():
                     for line in item["evidence"].splitlines():
                         console.frame_line(st('依据','Evidence') + separator + line, 'muted')
         elif theme == 'iprisk':
-            console.banner('  VPS CHECK  ' + ('v' + __version__))
+            console.banner('  VPSMaster  ' + ('v' + __version__))
             console.line(release_label(lang), 'unknown')
             console.keyvalue(st('只读体检报告','Read-only diagnostic report'),
                              st('已请求 ipify 查询出口 IP' if args.detect_public_ip else '默认不请求外部网络','ipify egress query' if args.detect_public_ip else 'no external requests by default'), 'title')

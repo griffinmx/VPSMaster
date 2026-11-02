@@ -1,76 +1,118 @@
-# VPS Check · 1.0 public beta
+# VPSMaster
 
-[中文](README.md) | [English](README.en.md)
+**An open-source VPS diagnostics and management toolkit.**
 
-Read-only Python VPS diagnostics; internal package/command: proxydoctor. **Public beta, not the final release.** Version: `1.0.0b1`. Local candidate only; not publicly published or finally accepted.
+[中文](README.md) · [English](README.en.md) · [Limitations](KNOWN_LIMITATIONS.md) · [Contributing](CONTRIBUTING.md)
 
-## Install
+VPSMaster is a Python toolkit for Linux VPS users, especially beginners and the Chinese Linux community.
+The **1.0.0b1 Beta is CLI-focused**: transparent diagnostics are available; management and Web UI remain planned.
+Routine checks do not change SSH, firewall, routes or system DNS. Missing evidence remains unknown.
 
-Final hardening: route outcomes retain permission/dependency/network errors. ICMP/TCP
-permissions depend on system traceroute; no automatic elevation. Optional `--geo`
-adds estimated location, ASN/operator, provider and time, capped at 12 public lookups.
-Interactive frames adapt to narrow terminals. Exact acceptance scope is recorded in
-the separate report matching the ZIP SHA256; overseas VPS results are not implied.
+## Available
 
-Requires Linux, Python 3.10+ and standard-library venv. Target: Ubuntu 22.04 and newer. No Python runtime dependencies, sudo, pip or automatic system package installation. Check the ZIP against a trusted SHA256 digest and review install.py first; Python extraction works without unzip.
+| Area | Current Beta | Boundary |
+| --- | --- | --- |
+| System/resources | OS, kernel, CPU, memory, Swap, disk capacity, visible quotas, short steal/PSI samples | No dedicated-hardware proof or CPU/disk benchmark |
+| Network | DNS, IPv4/IPv6 TCP and certificate-verified TLS, interfaces/routes | Subject to permissions, connectivity and target availability |
+| Traceroute | Native UDP; optional system ICMP/TCP; IP, RTT, timeout, optional ASN/operator/location | 30 TTLs by default, max64; router silence is not forwarding loss |
+| BGP/ASN | RIPE RIS prefixes, origins, neighbours and AS_PATH samples | Collector view, not local packet paths or commercial relationships |
+| IP risk | Provider-specific ownership, network type, proxy/VPN/Tor/risk evidence, conflicts | Quotas, missing fields and disagreement remain visible |
+| Media | Ten public service pages, including Netflix, Disney+ and YouTube | Reachability only, no unlock or account playback guarantee |
+| Security | Read-only SSH, ports, firewall, selected permissions and update caches | No full vulnerability scan or automatic repair |
+| Reports | Local redacted JSON/Markdown, recovery journals, English/Chinese themes | Review before sharing; incomplete data may remain partial |
+| Opt-in tests | Bounded repeated bandwidth and fixed China targets | Mainland three-carrier coverage is experimental, disabled by default |
 
-```bash
-sha256sum -c ProxyDoctor-v1.0.0-beta.1.zip.sha256
-python3 -m zipfile -e ProxyDoctor-v1.0.0-beta.1.zip .
-cd ProxyDoctor-v1.0.0-beta.1
-python3 install.py --run
-PD="$HOME/.local/share/proxydoctor/1.0.0b1/bin/proxydoctor"
-"$PD" check --theme framed --lang en
-"$PD" suite --offline --lang en
-```
+Execution success does not mean every provider or destination is available. Results retain status, method, time, source and limitations.
 
-An isolated user environment is created. Existing destinations are refused; failures clean only the new directory. Missing prerequisites fail clearly. The supplied launcher and Python workers explicitly use -B. This covers supplied launch paths, not arbitrary external imports or pip precompilation; add -B when invoking Python directly.
+## Install and use
 
-## Commands
-
-```bash
-"$PD" suite --lang en
-"$PD" quality --color always --lang en
-"$PD" ipquality --show-ip --lang en
-"$PD" media --lang en
-"$PD" cn-nodes --lang en
-"$PD" bandwidth --china --allow-bandwidth --rounds 3 --sample-mib 4 --lang en
-"$PD" bandwidth --source mobile-hk --allow-bandwidth --lang en
-"$PD" trace --target 1.1.1.1 --method icmp --geo --lang en
-"$PD" trace --target 1.1.1.1 --method tcp --tcp-port 443 --lang en
-"$PD" return-route --method udp --lang en
-"$PD" bgp --target 1.1.1.1 --lang en
-"$PD" suite --route-method tcp --include-return-routes --include-bgp --lang en
-```
-
-- check/suite support default, iprisk and framed themes, with live results. Explicit language choices override the Linux-console fallback.
-- System, visible resource quota, Swap, short steal/PSI, SSH/ports/firewall, file permissions and update-cache observations. No benchmarks or exclusive-resource certification.
-- IPv4/IPv6 DNS/TCP/certificate-verified TLS and native UDP trace. ICMP/TCP require existing system traceroute; no elevation or automatic installation.
-- IP provider evidence; failed providers remain visible. Optional PTR/outbound TCP25 sends no email.
-- Ten media services: public webpage reachability only. No unlock or playback verdict in the CLI.
-- Repeated bounded bandwidth requires --allow-bandwidth. Download means node to this host; upload means this host to node. China candidates currently provide download only; Cloudflare supports upload.
-- cn-nodes uses small plaintext protocol samples, without credentials or report uploads. Success is not a capacity measurement. Hong Kong Mobile never counts as mainland Mobile coverage.
-- Return routes: Beijing/Shanghai/Guangzhou × three carriers, this host to China targets. Not nationwide or reverse-direction coverage. Per-route soft probe budget: 30s; optional geo requests have separate limits.
-- BGP: RIPE RIS prefix, origin ASNs, sampled neighbours and AS paths. Collector observations do not prove local selected packet paths, commercial upstreams or premium tiers.
-
-Development-host small JPEG samples succeeded for Shanghai Telecom and Hong Kong Mobile. Mainland Unicom/Mobile do not yet have successful evidence this round. HTTPS throughput never downgrades to HTTP or disables certificate verification. New Linux/overseas network capabilities remain pending real acceptance.
-
-## Reports and safety
-
-Reports/journals are local (reports/ by default), with no overwrites. --show-ip affects only terminal display. Review redacted exports before sharing.
+Requires Linux, Python3.10+ and stdlib venv. No third-party Python runtime dependencies, pip, sudo or automatic system package installation.
+Obtain the ZIP/checksum through a trusted channel and review install.py. A checksum detects change, not publisher authenticity.
 
 ```bash
-"$PD" suite --offline --json-output report.json --lang en
-"$PD" report --input report.json --output report.md --lang en
-"$PD" recover --journal report.json.events.jsonl --output recovered.json --lang en
+sha256sum -c VPSMaster-v1.0.0-beta.1.zip.sha256
+python3 -m zipfile -e VPSMaster-v1.0.0-beta.1.zip .
+cd VPSMaster-v1.0.0-beta.1
+python3 -I -B install.py --run
+VM="$HOME/.local/share/vpsmaster/1.0.0b1/bin/vpsmaster"
+"$VM" --version
+"$VM" check --theme framed --lang en
+"$VM" suite --offline --lang en
+"$VM" quality --lang en
+"$VM" trace --target 1.1.1.1 --method tcp --tcp-port 443 --geo --lang en
+"$VM" bgp --target 1.1.1.1 --lang en
+"$VM" media --lang en
+"$VM" suite --lang en --json-output report.json
+"$VM" report --input report.json --output report.md --lang en
+"$VM" recover --journal report.json.events.jsonl --output recovered.json --lang en
 ```
 
-Ctrl+C/SIGTERM cancels workers and attempts to save observations. Operations have timeouts; journals have size limits. Power/storage failure and SIGKILL cannot guarantee unfinished data survives. JSON keeps legacy fields and uniform result items; Markdown uses collision-safe JSON fences.
+`--run` initially performs offline checks. Existing installation/report paths are refused; choose a new user-owned `--prefix` for a separate install.
+ICMP/TCP require an existing system traceroute and appropriate permissions. Missing dependency/permission failures are explicit; there is no automatic elevation.
+Online commands contact external services, which see the source IP. `check` is offline unless its explicit public-IP lookup is selected.
 
-Exit codes: 0 completed, 1 findings/incomplete/storage failure, 2 usage/install error, 130 cancelled. Defaults do not modify SSH/firewall/routes/system DNS, benchmark, repair or upload complete reports. Online targets see the request source.
+Bandwidth needs explicit consent, for example `bandwidth --allow-bandwidth --rounds 3 --sample-mib 4`.
+`--china` selects experimental mainland candidates; availability is incomplete. Hong Kong Mobile never substitutes for mainland Mobile.
+Download means node → this host, upload means this host → node. Short samples are not line capacity.
+The current `attempted` summary counts scheduled sample slots, including skipped slots, not actual wire requests; inspect sample errors.
 
-P0 automation: 277 passed, one Windows symlink-permission skip. Current VM acceptance is recorded separately in BETA_ACCEPTANCE_REPORT.md and its JSON beside the candidate ZIP, identified by SHA256. Historical Alpha and earlier Beta evidence is not current-build acceptance. Full carrier throughput, ICMP/TCP permission variants and overseas paths require explicit coverage evidence.
+### Compatibility
 
-No nationwide carrier coverage, long monitoring, DNSBL, Web UI, proxy deployment, Karing subscriptions or automatic updates/uninstall. Install updates into a new directory; back up reports before removing a confirmed old installation.
+Former project name: **ProxyDoctor**. New visible brand/command: **VPSMaster / vpsmaster**.
+The installer also creates the legacy `proxydoctor` launcher. Python package/distribution identity `proxydoctor`, imports, JSON schemas and `PROXYDOCTOR_*` variables remain compatible.
+New installs default to `~/.local/share/vpsmaster/1.0.0b1`; old directories/reports are not migrated or overwritten.
+Both source scripts `vpsmaster.sh` and `proxydoctor.sh` remain usable. Supplied launchers/workers use `-B`; arbitrary external imports are outside that promise.
 
-See [current status](CURRENT_STATUS.md), [changes and pending acceptance](PUBLIC_BETA_CHANGE_REPORT.md), [security](SECURITY.md) and [third-party notices](THIRD_PARTY_NOTICES.md). MIT project, standard-library runtime, no bundled tracing/speed-test binaries.
+### Illustrative CLI output
+
+Placeholders below show structure, **not benchmark results for this build**:
+
+```text
+1.0.0b1 · VPSMaster · 1.0 public beta (not the final release)
+ 1  127.0.0.1    <RTT> ms    Private/reserved  AS? --- [reached]
+Trace result       reached
+Recovery journal: <local path>
+```
+
+## Validation and limitations
+
+Lab baselines are Ubuntu22.04.5 Desktop/Python3.10.12 and Ubuntu24.04.3 Server/Python3.12.3, x86_64.
+Each VPSMaster candidate requires fresh installation from its final ZIP; only a matching-SHA acceptance report establishes that build's pass.
+The old ProxyDoctor ZIP is preserved and cannot be renamed as proof for the new build.
+ICMP/TCP loopback success and limited public observations do not establish complete public routing.
+
+- Media is public-page reachability, not unlock, paid entitlement or actual playback.
+- Mainland three-carrier speed testing is experimental and off by default.
+- BGP/geolocation depend on third-party accuracy, terms and quotas; geography is estimated.
+- Overseas VPS, ARM, public IPv6 and a fresh Ubuntu22 Server image are not comprehensively validated.
+- PTY bytes/width checks do not prove GUI font rendering. Beta is not production stability or independent security certification.
+- No Web UI, automated proxy deployment, full management panel, long monitoring or CPU/disk benchmarks are currently provided.
+
+See [full limitations](KNOWN_LIMITATIONS.md), [status](CURRENT_STATUS.md) and [Beta notes](RELEASE_NOTES.md).
+
+## Security and privacy
+
+No default configuration changes, automatic repairs or full-report uploads. Installation creates a user venv; diagnostics/reports create local files.
+`--show-ip` affects the terminal; exported files mask known IP/credential patterns, not arbitrary identifying text. Review before sharing.
+Ctrl+C/SIGTERM attempts cancellation and persistence; recovery uses the last complete journal event. SIGKILL, power/storage failure can prevent final JSON.
+Exit codes: 0 completed, 1 findings/incomplete/storage failure, 2 usage/install error, 130 cancelled.
+Never publish raw logs, subscriptions, passwords, tokens or keys. See [SECURITY.md](SECURITY.md).
+
+## Roadmap — Planned
+
+These are future goals, **not claims of current implementation**. Stage1 deepens existing basic diagnostics. No delivery dates are promised.
+
+1. **Network and hardware:** improve mainland three-carrier tests; deepen ICMP/TCP/UDP diagnosis; BGP/ASN/path analysis; CPU/disk benchmarks; more IP intelligence/reputation sources.
+2. **Long-term diagnosis:** stability monitoring; peak-hour analysis; historical report comparison; anomaly detection/advice; VPS purchase acceptance reports.
+3. **Security and maintenance:** deeper audits; repair suggestions/previews; configuration backup/rollback; maintenance assistance.
+4. **Automation and Web UI:** optional service deployment; modular management; local Web UI; state visualization; optional service configuration/management.
+
+## Contributing, Issues and license
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Once a repository is published, use its **Issues → New issue** tab with the bundled [bug](.github/ISSUE_TEMPLATE/bug_report.md) or [feature](.github/ISSUE_TEMPLATE/feature_request.md) template.
+No public repository URL is configured yet; no fictional owner/repo link is supplied. Use private channels for sensitive vulnerability reports.
+
+MIT project; former-brand contributor notices remain in [LICENSE](LICENSE).
+No third-party traceroute clients, databases or remote test scripts are bundled/executed. References/attribution are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [OPEN_SOURCE_REFERENCES.md](OPEN_SOURCE_REFERENCES.md).
+Our license does not grant rights to third-party APIs/data/test services; their terms, quotas and permissions apply separately.
+Reports do not expire automatically; review [data-service retention/sharing terms](docs/DATA_SERVICES.md), including applicable IP2Location cache limits.

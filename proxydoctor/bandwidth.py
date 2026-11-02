@@ -80,7 +80,7 @@ def transfer(direction, size, source='cloudflare'):
     if direction == 'upload' and provider.upload_url is None:
         result.error = 'unsupported'
         return result
-    headers = {'User-Agent': 'ProxyDoctor/0.4.1', 'Accept-Encoding': 'identity',
+    headers = {'User-Agent': 'VPSMaster/1.0.0b1', 'Accept-Encoding': 'identity',
                'Cache-Control': 'no-cache'}
     url = provider.download_url
     if not provider.use_range and not provider.capped_stream:

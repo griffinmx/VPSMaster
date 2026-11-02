@@ -109,7 +109,7 @@ def trace(target, emit=print, hops=30, wait=1.0, lang='zh', geo=True, records=No
                 sock.setsockopt(protocol,socket.IPV6_UNICAST_HOPS if v6 else socket.IP_TTL,ttl)
                 start=time.monotonic()
                 endpoint=(str(address),33434+ttl,0,0) if v6 else (str(address),33434+ttl)
-                sock.sendto(b'ProxyDoctor',endpoint)
+                sock.sendto(b'VPSMaster',endpoint)
                 found=False
                 while time.monotonic()-start < wait:
                     try:

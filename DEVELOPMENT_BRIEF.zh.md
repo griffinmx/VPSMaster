@@ -1,3 +1,5 @@
+> 历史记录 / Historical record：ProxyDoctor 是项目旧名。以下旧版本、SHA256、测试数量与路径保留原样，不代表 VPSMaster 新构建已通过；当前范围见 README.md、CURRENT_STATUS.md 和新包同 SHA256 验收报告。
+
 # VPS 综合检测工具——完整开发与工程优化任务书
 
 ## 0. 项目背景与最终目标

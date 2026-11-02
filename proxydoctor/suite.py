@@ -42,11 +42,11 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
     from datetime import datetime,timezone
     report={'schema_version':3,'mode':'read-only','generated_at':datetime.now(timezone.utc).isoformat(),'target_port':port,'network':None,'route':None,'tool_version':__version__,'offline':offline,'bandwidth':None,'bandwidth_consent':allow_bandwidth,'cpu_benchmark':'not_run','ip_quality':None,'media':{}}
     if framed:
-        out.frame_open(tr('VPS 检测报告','VPS check report'), box_w=78, subtitle=release_label(lang) + ' · ' + __version__)
+        out.frame_open(tr('VPSMaster 检测报告','VPSMaster diagnostic report'), box_w=78, subtitle=release_label(lang) + ' · ' + __version__)
         out.frame_keyvalue(tr('模式','Mode'), tr('离线模式' if offline else '联网模式','Offline' if offline else 'Online'))
         out.frame_keyvalue(tr('目标端口','Target port'), str(port))
     elif iprisk:
-        out.banner('  VPS CHECK  ' + ('v' + __version__))
+        out.banner('  VPSMaster  ' + ('v' + __version__))
         out.line(release_label(lang), 'unknown')
         out.keyvalue(tr('只读体检报告 · 原生检测','Read-only diagnostic report · native checks'),
                      tr('离线模式' if offline else '联网模式','Offline' if offline else 'Online'),'title')
@@ -54,8 +54,8 @@ def run_suite(lang='zh',offline=False,sample_mib=4,route_target='1.1.1.1',besttr
         print(flush=True)
     else:
         out.line(release_label(lang), 'unknown')
-        print(tr(f'VPS 检测工具 {__version__} | 原生检测 | 联网模式' if not offline else f'VPS 检测工具 {__version__} | 离线模式',
-                 f'VPS Check {__version__} | Native checks | Online' if not offline else f'VPS Check {__version__} | Offline'),flush=True)
+        print(tr(f'VPSMaster {__version__} | 原生检测 | 联网模式' if not offline else f'VPSMaster {__version__} | 离线模式',
+                 f'VPSMaster {__version__} | Native checks | Online' if not offline else f'VPSMaster {__version__} | Offline'),flush=True)
     from .reports import ReportStore, UnavailableStore, utc_now
     from .runner import ModuleRunner
     data = {'checks': []}

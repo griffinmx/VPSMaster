@@ -1,3 +1,5 @@
+> 历史记录 / Historical record：ProxyDoctor 是项目旧名。以下旧版本、SHA256、测试数量与路径保留原样，不代表 VPSMaster 新构建已通过；当前范围见 README.md、CURRENT_STATUS.md 和新包同 SHA256 验收报告。
+
 ## 1.0 公测待验收
 
 当前包的 Ubuntu 安装、ICMP/TCP、三网有效下载、BGP 实网及海外三城回程均留待下一轮；本轮开发机 271 通过、1 跳过。旧 Alpha 验证仅为历史。具体步骤范围见 PUBLIC_BETA_CHANGE_REPORT.md。

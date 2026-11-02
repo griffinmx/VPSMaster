@@ -1,111 +1,182 @@
-# VPS 检测工具 · 1.0 公测版
+# VPSMaster
 
-[中文](README.md) | [English](README.en.md)
+**面向 Linux VPS 用户的一站式服务器检测、网络诊断与管理工具。**
 
-面向 Ubuntu VPS 的 Python 命令行体检工具。内部项目名及命令仍为 ProxyDoctor / `proxydoctor`。
-**这是 1.0 公测版，非最终版本。** 包版本 `1.0.0b1`；当前是本地候选包，尚未公开发布或完成最终验收。
+[中文](README.md) · [English](README.en.md) · [已知限制](KNOWN_LIMITATIONS.md) · [贡献指南](CONTRIBUTING.md)
+
+VPSMaster 是基于 Python 的开源 VPS 综合检测与管理工具，主要面向中文 Linux 社区及 VPS 初学者。
+**当前 `1.0.0b1` 是以 CLI 为核心的 Beta 公测候选，非生产稳定版；管理能力仍在规划中。**
+项目强调安全、易用和检测结果透明：普通检测默认不修改 SSH、防火墙、路由或系统 DNS，未知结果不会被写成安全或成功。
+
+> An open-source VPS diagnostics and management toolkit. The current Beta focuses on transparent, read-only CLI diagnostics; management and Web UI are planned.
+
+## Available / 当前可用
+
+| 模块 | 当前 Beta 能力 | 判断边界 |
+| --- | --- | --- |
+| 服务器信息与资源 | Linux/内核/架构、CPU、内存、Swap、磁盘容量、可见配额、短时 steal/PSI | 不能证明硬件独享；没有 CPU/磁盘基准 |
+| 网络基础 | DNS、分 IPv4/IPv6 的 TCP、证书验证 TLS、接口和路由信息 | 取决于权限、网络和目标服务，保留错误与未知 |
+| Traceroute | 自主 UDP，可选系统 traceroute 的 ICMP/TCP；IP、RTT、响应/超时、可选 ASN/位置 | 默认30跳、最多64跳；跳点不响应不等于真实转发丢包 |
+| BGP / ASN | RIPE RIS 前缀、起源 ASN、邻居及有限 AS_PATH 样本 | 采集器视角，不代表本机选路、商业上游或优质线路承诺 |
+| IP 信息与风险 | 多来源归属、网络类型、代理/VPN/Tor/风险信息及冲突；可选 PTR/TCP25 | 不合成不透明“纯净度”；第三方可能失败、限额或缺字段 |
+| 流媒体网页 | Netflix、Disney+、YouTube 等10项公开服务页面的基础可达性 | **不保证解锁、登录后地区权限或实际播放** |
+| 基础安全体检 | SSH、监听端口、防火墙、固定敏感路径权限、更新缓存 | 只读提示，不是完整漏洞扫描或自动修复 |
+| 本地报告 | 脱敏 JSON、Markdown、逐步恢复日志、失败隔离、中英文终端主题 | 分享前仍需人工复核；断电/SIGKILL不能保证未落盘数据 |
+| 可选带宽与中国目标 | 多来源多轮有界下载/部分上传、固定中国候选与三城九方向追踪入口 | 需明确允许流量；大陆三网实验性，默认关闭；不是完整全国回程 |
+
+“模块执行完成”不等于目标可用或检测结论完整。`success / failure / skipped / unsupported / unknown` 与原因、时间、方法和来源分别保留。
 
 ## 安装
 
-需要 Linux、Python 3.10+ 和标准库 venv，支持目标为 Ubuntu 22.04 及更新版本。
-没有第三方 Python 运行依赖，不调用 sudo、pip 或系统包管理器。
-先从可信来源核对摘要，再解压并阅读 install.py。没有 unzip 也可用 Python 解压：
+需要 Linux、Python **3.10+** 及标准库 `venv`。运行时没有第三方 Python 包依赖；安装器不调用 pip、sudo 或系统包管理器。
+先从可信渠道取得 ZIP 和校验文件，并阅读 `install.py`；校验和不能独立证明发布者身份。
 
 ```bash
-sha256sum -c ProxyDoctor-v1.0.0-beta.1.zip.sha256
-python3 -m zipfile -e ProxyDoctor-v1.0.0-beta.1.zip .
-cd ProxyDoctor-v1.0.0-beta.1
-python3 install.py --run
+sha256sum -c VPSMaster-v1.0.0-beta.1.zip.sha256
+python3 -m zipfile -e VPSMaster-v1.0.0-beta.1.zip .
+cd VPSMaster-v1.0.0-beta.1
+python3 -I -B install.py --run
+VM="$HOME/.local/share/vpsmaster/1.0.0b1/bin/vpsmaster"
+"$VM" --version
+"$VM" check --lang zh --theme framed
 ```
 
-安装到用户目录的隔离环境，首次仅运行离线体检。已有目录不会覆盖；失败只清理本次新建目录。
-缺少 Python/venv 时明确退出，不自动安装系统依赖。`--prefix` 可指定不存在的用户目录。
-安装后的启动器及各 Python worker 显式使用 `-B`，忽略用户包路径并禁止这些启动路径生成字节码缓存。此承诺覆盖随包安装器启动命令和源码脚本；自行使用 Python 导入或 `python -m` 时应加 `-B`，pip 的安装期预编译及外部调用方不在此范围。
+安装到用户目录的隔离环境，`--run` 首次只运行离线体检。缺少 Python/venv 会明确退出，不擅自安装系统依赖。
+已有安装目录不会覆盖。需要另一路径时用 `python3 -I -B install.py --prefix "$HOME/vpsmaster-beta-test"`，并使用打印出的启动器路径。
+
+### 更名与兼容性
+
+- 项目旧名 **ProxyDoctor**；当前用户可见品牌统一为 **VPSMaster**。
+- 新命令为 `vpsmaster`，同一安装目录保留 `proxydoctor` 兼容入口；两者调用同一实现。
+- Python 包名、发行元数据中的旧包标识 `proxydoctor`、导入路径、已有 JSON schema 和 `PROXYDOCTOR_*` 环境变量保留。没有宣称支持新的 `VPSMASTER_*` 变量。
+- 新默认目录为 `~/.local/share/vpsmaster/1.0.0b1`；旧安装、报告和 `~/.local/share/proxydoctor/` 不自动改名或迁移。
+- 源码入口 `bash vpsmaster.sh ...` 与 `bash proxydoctor.sh ...` 均可用。提供的启动器与 Python workers 使用 `-B`，不通过删除缓存掩盖问题；外部自行导入不在此承诺范围。
+
+## 使用
 
 ```bash
-PD="$HOME/.local/share/proxydoctor/1.0.0b1/bin/proxydoctor"
-"$PD" check --theme framed --lang zh
-"$PD" suite --offline --theme framed
-"$PD" suite --lang en
-"$PD" quality --color always
-"$PD" ipquality --show-ip
-"$PD" media
-"$PD" --help
+# 本机体检，不发起外部探测（--detect-public-ip 是另行选择的联网选项）
+"$VM" check --lang zh --color always
+"$VM" suite --offline --lang en
+
+# 联网模式：目标服务会看到请求来源 IP
+"$VM" quality --lang zh
+"$VM" suite --lang zh --json-output report.json
+"$VM" trace --target 1.1.1.1 --method udp --max-hops 30
+"$VM" trace --target 1.1.1.1 --method tcp --tcp-port 443 --geo
+"$VM" bgp --target 1.1.1.1
+"$VM" ipquality
+"$VM" media
+
+# 本地导出和恢复；不覆盖已有文件
+"$VM" report --input report.json --output report.md
+"$VM" recover --journal report.json.events.jsonl --output recovered.json
+"$VM" --help
 ```
 
-`check`、`suite` 支持 default/iprisk/framed 三种主题。结果直接逐项显示在命令行。
-中英文可选；纯 Linux 文本控制台默认英文，显式 `--lang zh` 或 `--lang=zh` 保留中文。
+ICMP/TCP 需要系统已有 traceroute，权限不足显示 `PERMISSION_DENIED`，缺依赖明确跳过/退出，不自动提权安装。
+`--geo` 最多查询12个公网跳点，私有/保留地址不外发；位置是数据库推测，不是物理路径证明。
 
-## 能力与范围
-
-| 模块 | 本版能力 | 结果范围 |
-| --- | --- | --- |
-| 系统和资源 | 系统、CPU、内存、Swap、根分区、可见配额、短采样 steal/PSI | 无法证明资源独享；不执行 CPU/磁盘基准 |
-| 网络 | 分 IPv4/IPv6 的 DNS、TCP、证书验证 TLS | 本机到指定目标的当前观测 |
-| 路由 | 原生 UDP；可选系统 traceroute 的 ICMP/TCP | 默认 30 跳、最多 64 跳；响应缺失不等于转发丢包 |
-| IP 信息 | 归属、ASN、运营商及分来源风险；可选 PTR/TCP25 | 缺失保持未知；接口失败显示，未配置的可选密钥来源可省略 |
-| 流媒体 | Netflix、Disney+、YouTube Premium 等 10 项公开网页 | 仅可达性，不输出解锁或播放成功结论 |
-| 安全 | SSH、端口、防火墙、权限和更新缓存只读检查 | 不修改配置，不是完整漏洞扫描 |
-| 带宽 | 多来源多轮下载，Cloudflare 支持上传 | 必须明确允许；短样本不报线路容量 |
-| BGP | RIPE RIS 前缀、起源 ASN、邻居、AS_PATH 样本 | 采集器视角，不等于本机选路或商业上游 |
-
-## 三网、路由和 BGP
-
-实测覆盖以随包提供、SHA256 一致的验收报告为准；没有海外 VPS 验收证据。
-
-ICMP/TCP 权限取决于系统 traceroute。权限不足显示 `PERMISSION_DENIED`，不自动提权。
-可选 `--geo` 提供跳点 ASN、运营商、来源与时间；地理位置是数据库推测，最多查询 12 个公网跳点，遇限额停止。窄交互终端面板会适配窗口宽度。
+默认不运行带宽测试。确需测试时单独允许，并先核对命令预告的负载预算：
 
 ```bash
-# 固定候选的小流量探测，不运行带宽测试
-"$PD" cn-nodes
-# 大陆三运营商候选多轮下载；仍可能不可用，失败如实显示
-"$PD" bandwidth --china --allow-bandwidth --rounds 3 --sample-mib 4
-"$PD" bandwidth --source cn-telecom-sh --allow-bandwidth
-# 香港移动单独标注，不能替代大陆移动
-"$PD" bandwidth --source mobile-hk --allow-bandwidth
-# ICMP/TCP 需要系统已经安装 traceroute，缺少则明确退出，不提权安装
-"$PD" trace --target 1.1.1.1 --method tcp --tcp-port 443 --geo
-"$PD" trace --target 1.1.1.1 --method icmp --max-hops 64
-# 北京/上海/广州 × 三网，逐条执行，每条约 30 秒探测软预算
-"$PD" return-route --method udp
-"$PD" return-route --method tcp --family 6
-"$PD" bgp --target 1.1.1.1
-# 综合入口额外模块需明确开启
-"$PD" suite --route-method tcp --include-return-routes --include-bgp
+"$VM" bandwidth --allow-bandwidth --rounds 3 --sample-mib 4
+# 实验性：中国大陆三网候选，并不保证三网都有可用节点
+"$VM" bandwidth --china --allow-bandwidth --rounds 3 --sample-mib 1
+"$VM" cn-nodes
+"$VM" return-route --method udp --max-hops 30
 ```
 
-三城探测方向为“本机 → 中国目标”，在海外 VPS 上通常称回程；不包含中国侧到 VPS 的去程或全国各省全部线路。
-ASN 标签不能证明 CN2 GIA 等套餐等级。测速下载是节点到本机，上传是本机到节点，和逐跳探测方向分别解释。
+下载方向为“节点 → 本机”，上传为“本机 → 节点”；中国候选当前下载为主。香港移动单独标注，不能替代大陆移动。
+短文件成功不是线路容量；`attempted` 目前统计计划样本槽，包含失败后自动跳过的槽位，不是实际网络请求次数，需查看每个样本错误。
 
-节点标签来自公开目录，不等于实测身份认证。当前开发机已验证上海电信及香港移动的小图片可访问；大陆联通、移动尚无本轮成功证据。
-香港不计入大陆三网覆盖。HTTPS 测速不自动降级明文或关闭证书验证。三网候选本轮仅下载，未实现三网上传。
-`cn-nodes` 使用少量明文测试协议数据，不发送凭据或报告；小样本成功不等于带宽容量。
+### CLI 示例输出
 
-## 报告、安全和中断
+以下是**格式示意**，`<RTT>` 等为占位符，不是本发行包的测速成绩：
 
-报告默认保存在当前目录的 reports/。支持 `--json-output` 的命令可指定路径；已有文件不会覆盖。
-保存文件默认脱敏 IP；`--show-ip` 只影响终端。分享前仍须人工复核。
-
-```bash
-"$PD" suite --offline --json-output report.json
-"$PD" report --input report.json --output report.md
-"$PD" recover --journal report.json.events.jsonl --output recovered.json
-"$PD" recover --journal report.json.events.jsonl --output recovered.md --format markdown
+```text
+1.0.0b1 · VPSMaster · 1.0 公测版（非最终版本）
+ 1  127.0.0.1    <RTT> ms    内网/保留地址  AS? --- [reached]
+追踪结果           reached
+恢复日志: <本地文件路径>
 ```
 
-Ctrl+C/SIGTERM 尝试取消活动子进程并保存已有记录。API、DNS、命令、测速有限时；恢复日志有大小上限。
-JSON 保留原模块和统一 result_items 的状态、方法、时间、来源及范围。Markdown 使用防提前闭合的 JSON 代码围栏。
-断电、SIGKILL、磁盘故障时以最后完整恢复事件为准。
+终端逐项回显，支持 `default / iprisk / framed` 和中英文；`framed` 适配窄终端。
+Linux纯文字控制台默认英文，显式 `--lang zh` 保留中文，但需要终端字体支持。
 
-退出码：0 正常完成，1 有提示/不完整/保存失败，2 参数或安装错误，130 中断。
-默认只读，不修改 SSH、防火墙、路由、系统 DNS，不自动上传完整报告或修复系统；联网目标会看到请求来源 IP。
+## 已验证环境与验收范围
 
-## 公测状态与开源
+已有实机基线是 **Ubuntu 22.04.5 Desktop / Python3.10.12 / x86_64** 与 **Ubuntu 24.04.3 Server / Python3.12.3 / x86_64**。
+本次 VPSMaster 构建使用新 ZIP、全新 HOME/安装目录重新验收；**仅旁附与 ZIP SHA256 一致的验收报告可证明本构建通过**。
+旧 ProxyDoctor 验收包保留，不能换名充当 VPSMaster 的通过证据。
 
-P0 修复自动化：277 通过、1 项 Windows 符号链接权限跳过。当前构建的实机验收结果以随候选 ZIP 单独交付的 BETA_ACCEPTANCE_REPORT.md 和结构化结果中的 SHA256 为准；不将旧候选报告当作本包已通过。ICMP/TCP 实际权限、完整大陆三网和海外回程需按该报告的覆盖范围判断。
-旧 Alpha 结果不是本包验收证据。见 [当前状态](CURRENT_STATUS.md)、[变更和待测项](PUBLIC_BETA_CHANGE_REPORT.md)。
-尚无全国完整三网、长期监测、CPU/磁盘基准、DNSBL、Web UI、代理部署、Karing 订阅或自动更新卸载。
-更新安装到新版本目录；卸载前退出进程、备份报告，仅移除自己确认过的安装目录。
+当前测试不等于全新22 Server镜像、海外VPS、ARM或公网IPv6已全面验证。
+ICMP/TCP 的回环成功和有限公网观察，不代表所有线路或完整公网路径可用。
+版本与实际范围见 [当前状态](CURRENT_STATUS.md)、[发行说明](RELEASE_NOTES.md) 和包外验收报告。
 
-MIT 项目，标准库运行。感谢 [NextTrace](https://github.com/nxtrace/NTrace-core)、[CleanIP sh.cd](https://github.com/CleanIP/sh.cd)、[RIPEstat](https://stat.ripe.net/) 和既有参考项目；详见 [来源和许可](THIRD_PARTY_NOTICES.md)。不打包下载执行第三方检测脚本或测速客户端。
+## 安全与隐私
+
+普通检测不修改 SSH、防火墙、路由或系统 DNS，不自动修复或上传完整报告。
+安装器只创建指定的用户隔离环境；检测和导出会创建本地报告。联网 API、媒体页和测速服务仍会看到请求来源 IP。
+提供的入口有超时与取消处理；Ctrl+C/SIGTERM 尝试保存已有结果，恢复以最后完整日志事件为准。
+退出码：`0` 完成，`1` 有发现/不完整/存储失败，`2` 参数或安装错误，`130` 中断。
+
+`--show-ip` 只影响终端显示；导出默认脱敏 IP、已知密钥字段和URL凭据，但不是任意文本匿名器。
+不要公开原始日志、订阅地址、密码、Token或私钥。安全问题见 [SECURITY.md](SECURITY.md)，未知不能当作安全保证。
+
+## Roadmap / 开发路线 — Planned / 规划中
+
+以下是未来目标，**不代表当前 Beta 已实现**。阶段一包含现有基础诊断的继续完善；未承诺交付日期。
+
+### 阶段一：网络与硬件检测完善 — Planned
+
+- 中国大陆三运营商测速完善
+- ICMP/TCP/UDP 线路诊断深化
+- BGP、ASN 和线路分析深化
+- CPU 和磁盘性能基准
+- IP 情报与信誉来源扩展
+
+### 阶段二：长期监控与诊断 — Planned
+
+- 长时间网络稳定性监测
+- 晚高峰性能分析
+- 历史报告对比
+- 异常检测和诊断建议
+- VPS 购买验收报告
+
+### 阶段三：安全与维护 — Planned
+
+- 深度安全体检
+- 安全修复建议和预览
+- 配置备份及回滚
+- 服务器维护辅助功能
+
+### 阶段四：自动化管理及 Web UI — Planned
+
+- 可选服务器服务部署
+- 模块化管理能力
+- 本地 Web UI
+- 服务器状态可视化
+- 可选服务配置和管理功能
+
+## Known Limitations / 已知限制
+
+- 流媒体主要是公开网页可达性，不保证解锁、订阅权限、地区可用性或实际播放。
+- 中国大陆三网测速仍为实验性能力，默认关闭；没有完整可靠三网覆盖承诺。
+- BGP/IP 地理信息依赖第三方来源、准确性、服务条款和限额；位置不证明物理路由。
+- 海外 VPS、ARM、公网 IPv6、全新 Ubuntu22 Server 镜像未全面验证；新GUI字体渲染须单独目视验收。
+- Beta 不代表生产稳定性、独立安全认证或资源独享证明。
+- **当前没有 Web UI、自动代理部署或完整管理面板。** 也没有长时间监控、CPU/磁盘基准或完整全国三网回程。
+
+详见 [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)。更新请安装到新的、确认不存在的目录；卸载前备份报告，只移除自己确认的安装目录。
+
+## 贡献、Issues 与许可
+
+欢迎文档、翻译、可复现Bug和有来源的检测规则贡献，见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+仓库公开后使用顶部 **Issues → New issue**；[Bug 模板](.github/ISSUE_TEMPLATE/bug_report.md) 和 [功能建议模板](.github/ISSUE_TEMPLATE/feature_request.md) 已随源码提供。
+当前未配置公开仓库地址，不编造仓库URL；敏感安全问题不要发到公开Issues。
+
+项目采用 [MIT](LICENSE)，保留旧品牌贡献者版权。标准库运行，不打包第三方测速客户端/地理数据库，不下载执行外部检测脚本。
+感谢相关开源项目与数据服务，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [OPEN_SOURCE_REFERENCES.md](OPEN_SOURCE_REFERENCES.md)。
+本项目MIT许可不覆盖第三方API、数据库或测速服务，使用时仍需遵守其条款、配额与权限；没有长期或高负载使用授权保证。
+数据保留/分享边界（含IP2Location适用缓存期限）见 [第三方接口条款](docs/DATA_SERVICES.md)；当前工具不自动删除历史报告。

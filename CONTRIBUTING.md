@@ -1,4 +1,7 @@
-# Contributing / 参与贡献
+# Contributing to VPSMaster / 参与贡献
+
+公开仓库建立后请使用顶部 Issues → New issue；Bug/功能模板在 .github/ISSUE_TEMPLATE/。
+Roadmap 标记 Planned 的能力不能在贡献说明中写为已实现；更名仍保留 proxydoctor 包/命令兼容。
 
 Python 3.10+; runtime uses the standard library only.
 

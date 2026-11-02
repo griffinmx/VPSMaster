@@ -9,3 +9,13 @@ dist/
 work/
 outputs/
 reports/
+evidence/
+backups/
+private/
+.env
+.env.*
+*.key
+*.pem
+*.log
+*.zip
+*.events.jsonl

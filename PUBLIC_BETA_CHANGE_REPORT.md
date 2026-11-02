@@ -1,3 +1,5 @@
+> 历史记录 / Historical record：ProxyDoctor 是项目旧名。以下旧版本、SHA256、测试数量与路径保留原样，不代表 VPSMaster 新构建已通过；当前范围见 README.md、CURRENT_STATUS.md 和新包同 SHA256 验收报告。
+
 ## P0 追加修复 · BETA22-001
 
 本轮修复父解释器 -B 不被新 Python 进程继承的问题。联网、DNS、邮件子解释器均显式传 -B，安装器探测及源码脚本同步。

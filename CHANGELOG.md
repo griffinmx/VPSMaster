@@ -1,3 +1,5 @@
+> 历史记录 / Historical record：ProxyDoctor 是项目旧名。以下旧版本、SHA256、测试数量与路径保留原样，不代表 VPSMaster 新构建已通过；当前范围见 README.md、CURRENT_STATUS.md 和新包同 SHA256 验收报告。
+
 ## 1.0.0b1 — 2026-11-01 公测候选，非最终版本
 
 终端、语言和参数修复；流媒体改为可达性；新增可选 ICMP/TCP、三城三运营商追踪、BGP 和候选节点探测。完整大陆三网未验证。详见 PUBLIC_BETA_CHANGE_REPORT.md。

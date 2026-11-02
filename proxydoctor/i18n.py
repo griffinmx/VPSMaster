@@ -122,7 +122,7 @@ MESSAGES = {
     "未确认 sing-box 服务运行；新系统尚未安装属于正常情况": "sing-box service operation is unconfirmed; absence is expected on a fresh system",
     "通过": "PASS", "注意": "WARN", "未知": "UNKNOWN", "跳过": "SKIP", "失败": "FAIL",
     "[IP已隐藏]": "[IP REDACTED]",
-    "VPS 检测工具 只读体检：不修改系统；默认不请求外部网络": "VPS Check read-only checks: no system changes; no external requests by default",
+    "VPS 检测工具 只读体检：不修改系统；默认不请求外部网络": "VPSMaster read-only checks: no system changes; no external requests by default",
     "读取系统信息并生成体检报告": "Read system information and generate a diagnostic report",
     "拟使用的代理端口，默认 8388": "Intended proxy port (default: 8388)",
     "云控制台提供的 IP；本工具不验证归属": "IP from your cloud console; ownership is not verified",
