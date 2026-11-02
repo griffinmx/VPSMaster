@@ -19,3 +19,18 @@ private/
 *.log
 *.zip
 *.events.jsonl
+
+# Root-only development environments and generated validation output.
+/venv/
+/env/
+/.venv-*/
+/venv-*/
+/.tox/
+/.mypy_cache/
+/.ruff_cache/
+/.coverage
+/.coverage.*
+/coverage.xml
+/htmlcov/
+/.cache/
+/tmp/
