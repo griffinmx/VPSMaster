@@ -1,14 +1,18 @@
 # VPSMaster
 
-**面向 Linux VPS 用户的一站式服务器检测、网络诊断与管理工具。**
+**VPS Diagnostics & Security Hardening Toolkit**
+
+面向Linux VPS用户的开源服务器检测与安全管理工具。
 
 [中文](README.md) · [English](README.en.md) · [已知限制](KNOWN_LIMITATIONS.md) · [贡献指南](CONTRIBUTING.md)
 
-VPSMaster 是基于 Python 的开源 VPS 综合检测与管理工具，主要面向中文 Linux 社区及 VPS 初学者。
+VPSMaster 是一款基于Python、面向Linux VPS用户的开源服务器检测与安全管理工具，提供系统环境检测、网络质量诊断、IP信息分析及基础安全体检。主要面向中文Linux社区及VPS初学者，也帮助有经验的用户了解服务器状态和风险。
+
+当前以安全、易用、默认只读的CLI为基础；未来重点是Linux安全加固、配置备份/回滚、持续安全监控与可视化管理，目标是可控、可审计、可回滚的服务器管理。
 **当前 `1.0.0b1` 是以 CLI 为核心的 Beta 公测候选，非生产稳定版；管理能力仍在规划中。**
 项目强调安全、易用和检测结果透明：普通检测默认不修改 SSH、防火墙、路由或系统 DNS，未知结果不会被写成安全或成功。
 
-> An open-source VPS diagnostics and management toolkit. The current Beta focuses on transparent, read-only CLI diagnostics; management and Web UI are planned.
+> Open-source Linux VPS diagnostics, security auditing and future safe server hardening toolkit. Current Beta is read-only diagnostics; hardening and Web UI are Planned.
 
 ## Available / 当前可用
 
@@ -124,40 +128,45 @@ ICMP/TCP 的回环成功和有限公网观察，不代表所有线路或完整�
 `--show-ip` 只影响终端显示；导出默认脱敏 IP、已知密钥字段和URL凭据，但不是任意文本匿名器。
 不要公开原始日志、订阅地址、密码、Token或私钥。安全问题见 [SECURITY.md](SECURITY.md)，未知不能当作安全保证。
 
-## Roadmap / 开发路线 — Planned / 规划中
+## Roadmap / 安全加固开发路线 — Planned / 规划中
 
-以下是未来目标，**不代表当前 Beta 已实现**。阶段一包含现有基础诊断的继续完善；未承诺交付日期。
+**现在主打可信检测，未来核心竞争力是安全加固。** 以下全部为长期规划，不是当前已有功能，不承诺固定交付日期。
 
-### 阶段一：网络与硬件检测完善 — Planned
+### Phase 1 — 检测能力完善（Planned）
 
-- 中国大陆三运营商测速完善
-- ICMP/TCP/UDP 线路诊断深化
-- BGP、ASN 和线路分析深化
-- CPU 和磁盘性能基准
-- IP 情报与信誉来源扩展
+- CPU和磁盘性能基准；中国大陆电信、联通、移动节点覆盖。
+- 网络线路/BGP分析、IP情报交叉验证、网络检测准确性与兼容性改善。
+- 服务器安全体检规则扩展。
 
-### 阶段二：长期监控与诊断 — Planned
+### Phase 2 — 一键安全加固（Planned，未来重点）
 
-- 长时间网络稳定性监测
-- 晚高峰性能分析
-- 历史报告对比
-- 异常检测和诊断建议
-- VPS 购买验收报告
+- SSH安全配置检查与加固、密钥认证和密码登录策略管理。
+- UFW/nftables规则管理、Fail2ban等暴力破解防护。
+- 不必要服务/开放端口检查、更新/补丁策略、用户与文件权限加固、Linux安全基线。
+- 方案预览、风险解释及用户按需选择；当前Beta没有一键加固或自动修复。
 
-### 阶段三：安全与维护 — Planned
+### Phase 3 — 安全备份、验证与回滚（Planned）
 
-- 深度安全体检
-- 安全修复建议和预览
-- 配置备份及回滚
-- 服务器维护辅助功能
+- 修改前自动备份、变更差异、当前SSH管理连接检查与管理通道保留。
+- 执行后SSH/网络复验、具备可靠机制时的超时回滚、操作审计日志。
+- 配置恢复向导和失败恢复提示。
+- 自动回滚不能保证恢复所有断网、重启、云安全组或宿主机故障。
 
-### 阶段四：自动化管理及 Web UI — Planned
+### Phase 4 — 持续安全监控（Planned）
 
-- 可选服务器服务部署
-- 模块化管理能力
-- 本地 Web UI
-- 服务器状态可视化
-- 可选服务配置和管理功能
+- 定期安全体检、配置漂移、SSH异常登录和可疑端口变化提醒。
+- 安全报告历史对比、更新/风险变化提醒。
+- 长期网络稳定性监测、VPS购买验收报告。
+
+### Phase 5 — 可视化安全管理（Planned）
+
+- 本地Web UI、安全评分与风险展示、加固任务管理。
+- 备份/回滚界面、多服务器管理探索、可选服务部署维护。
+- Web UI默认不得向公网直接暴露管理入口；评分必须说明依据和不确定性。
+
+未来加固流程：**检测 → 解释 → 预览 → 确认 → 备份 → 执行 → 验证 → 回滚**。
+默认只读、明确授权、替代SSH管理连接验证、云安全组考虑、幂等与审计、业务端口保护均为前提。
+高风险变更不作无人值守默认动作，也不通过关闭安全保护或放宽权限“修复”。详见 [安全加固设计原则](SECURITY_ROADMAP.md)。
 
 ## Known Limitations / 已知限制
 
@@ -166,15 +175,15 @@ ICMP/TCP 的回环成功和有限公网观察，不代表所有线路或完整�
 - BGP/IP 地理信息依赖第三方来源、准确性、服务条款和限额；位置不证明物理路由。
 - 海外 VPS、ARM、公网 IPv6、全新 Ubuntu22 Server 镜像未全面验证；新GUI字体渲染须单独目视验收。
 - Beta 不代表生产稳定性、独立安全认证或资源独享证明。
-- **当前没有 Web UI、自动代理部署或完整管理面板。** 也没有长时间监控、CPU/磁盘基准或完整全国三网回程。
+- **当前没有 Web UI、一键安全加固、自动代理部署或完整管理面板。** 也没有长时间监控、CPU/磁盘基准或完整全国三网回程。
 
 详见 [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)。更新请安装到新的、确认不存在的目录；卸载前备份报告，只移除自己确认的安装目录。
 
 ## 贡献、Issues 与许可
 
 欢迎文档、翻译、可复现Bug和有来源的检测规则贡献，见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-仓库公开后使用顶部 **Issues → New issue**；[Bug 模板](.github/ISSUE_TEMPLATE/bug_report.md) 和 [功能建议模板](.github/ISSUE_TEMPLATE/feature_request.md) 已随源码提供。
-当前未配置公开仓库地址，不编造仓库URL；敏感安全问题不要发到公开Issues。
+在有权访问的仓库中使用 [Issues](https://github.com/griffinmx/VPSMaster/issues) → New issue；[Bug 模板](.github/ISSUE_TEMPLATE/bug_report.md) 和 [功能建议模板](.github/ISSUE_TEMPLATE/feature_request.md) 已随源码提供。
+仓库当前为Private，只有获授权用户可访问；未经所有者确认不会公开。敏感安全问题不要发到公开Issues。
 
 项目采用 [MIT](LICENSE)，保留旧品牌贡献者版权。标准库运行，不打包第三方测速客户端/地理数据库，不下载执行外部检测脚本。
 感谢相关开源项目与数据服务，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [OPEN_SOURCE_REFERENCES.md](OPEN_SOURCE_REFERENCES.md)。

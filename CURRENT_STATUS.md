@@ -1,10 +1,6 @@
-# VPSMaster · 1.0.0b1 当前状态
+# VPSMaster · Private Beta上线准备
 
-项目从ProxyDoctor更名为VPSMaster，保持Python包、schema和旧CLI兼容，新增vpsmaster启动器与默认安装目录。
-本轮仅做品牌、文档与兼容处理，没有实现Roadmap中的CPU/磁盘基准、监控、部署或Web UI。
-
-旧验收ZIP SHA256 adffff5e9e6b251a17e8c8345768082d3cb8de6abc579f69efb59e7c6a6b7217已只读保留。旧282项回归和两机各103项是历史基线，不能作为新包的通过证据。
-VPSMaster新包须完整回归、从最终ZIP安装及关键功能验收；实际结论、数量、环境与SHA256见包外VPSMASTER_TEST_REPORT.md和VPSMASTER_TEST_RESULTS.json。
-
-仍未全面验证海外VPS、ARM、公网IPv6、全新Ubuntu22 Server镜像。媒体仅网页可达性，三网实验性默认关闭；没有完整管理面板。
-未推送、合并或创建公开Release。历史Alpha/旧名文档保留原始证据，仅供追溯。
+基线01b325d / 032d6f3eec70484f49ae938d76b6386ec317c8a20a2cc206c9756ea0d25c6a94原样保留。
+本轮独立分支更新安全加固定位、五阶段Planned路线和私有CI/发行准备。未开发新的加固/自动修复/Web UI。
+文档和CI属于包内变化，因此新候选须重新构建、完整回归及最终ZIP实机验收。实际SHA与GitHub CI结果见包外PRIVATE_GITHUB_ACCEPTANCE_REPORT.md，不能沿用基线通过。
+仓库必须Private，发行必须草稿/Pre-release，未获公开授权。媒体/三网/ICMP-TCP/BGP/IP数据及未验证系统边界仍按README和KNOWN_LIMITATIONS解释。

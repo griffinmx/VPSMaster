@@ -1,11 +1,13 @@
 # VPSMaster
 
-**An open-source VPS diagnostics and management toolkit.**
+**VPS Diagnostics & Security Hardening Toolkit**
+
+Open-source Linux VPS diagnostics, security auditing and future safe server hardening toolkit.
 
 [中文](README.md) · [English](README.en.md) · [Limitations](KNOWN_LIMITATIONS.md) · [Contributing](CONTRIBUTING.md)
 
 VPSMaster is a Python toolkit for Linux VPS users, especially beginners and the Chinese Linux community.
-The **1.0.0b1 Beta is CLI-focused**: transparent diagnostics are available; management and Web UI remain planned.
+The **1.0.0b1 Beta is CLI-focused**: transparent diagnostics are available; Linux security hardening, safe backup/rollback, continuous monitoring and Web UI remain planned. The aim is controlled, auditable and recoverable management.
 Routine checks do not change SSH, firewall, routes or system DNS. Missing evidence remains unknown.
 
 ## Available
@@ -86,7 +88,7 @@ ICMP/TCP loopback success and limited public observations do not establish compl
 - BGP/geolocation depend on third-party accuracy, terms and quotas; geography is estimated.
 - Overseas VPS, ARM, public IPv6 and a fresh Ubuntu22 Server image are not comprehensively validated.
 - PTY bytes/width checks do not prove GUI font rendering. Beta is not production stability or independent security certification.
-- No Web UI, automated proxy deployment, full management panel, long monitoring or CPU/disk benchmarks are currently provided.
+- No Web UI, one-click hardening, automated proxy deployment, full management panel, long monitoring or CPU/disk benchmarks are currently provided.
 
 See [full limitations](KNOWN_LIMITATIONS.md), [status](CURRENT_STATUS.md) and [Beta notes](RELEASE_NOTES.md).
 
@@ -100,17 +102,21 @@ Never publish raw logs, subscriptions, passwords, tokens or keys. See [SECURITY.
 
 ## Roadmap — Planned
 
-These are future goals, **not claims of current implementation**. Stage1 deepens existing basic diagnostics. No delivery dates are promised.
+**Trusted diagnostics now; safe Linux hardening is the future focus.** None of these plans imply current implementation or fixed delivery dates.
 
-1. **Network and hardware:** improve mainland three-carrier tests; deepen ICMP/TCP/UDP diagnosis; BGP/ASN/path analysis; CPU/disk benchmarks; more IP intelligence/reputation sources.
-2. **Long-term diagnosis:** stability monitoring; peak-hour analysis; historical report comparison; anomaly detection/advice; VPS purchase acceptance reports.
-3. **Security and maintenance:** deeper audits; repair suggestions/previews; configuration backup/rollback; maintenance assistance.
-4. **Automation and Web UI:** optional service deployment; modular management; local Web UI; state visualization; optional service configuration/management.
+1. **Detection:** CPU/disk benchmarks, mainland carrier coverage, network/BGP analysis, IP intelligence cross-checks, accuracy/compatibility and more security rules.
+2. **One-click hardening:** SSH/key/password policy, UFW/nftables, Fail2ban, unused services/ports, updates/patches, permissions and Linux baselines; explain risks, preview plans and let users select actions.
+3. **Backup, verification and rollback:** back up before changes, show diffs, verify alternative SSH access and preserve management channels, recheck connectivity, bounded rollback where reliable, audit logs and recovery guidance. Rollback cannot guarantee recovery from every outage, reboot, cloud firewall or host failure.
+4. **Continuous monitoring:** periodic audits, configuration drift, unusual SSH login/port changes, report history, update/risk alerts, network stability and purchase acceptance reports.
+5. **Visual security management:** local Web UI, evidence-based risk display, hardening tasks, backup/rollback interface, multi-server exploration and optional service maintenance. No public management listener by default.
+
+Future flow: **detect → explain → preview → confirm → back up → execute → verify → roll back**.
+Explicit consent, alternative SSH access, cloud-firewall awareness, business-port protection, idempotency and audit records are required. High-risk changes must not be unattended defaults; disabling protection or broadening permissions is not a repair strategy. See [SECURITY_ROADMAP.md](SECURITY_ROADMAP.md).
 
 ## Contributing, Issues and license
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Once a repository is published, use its **Issues → New issue** tab with the bundled [bug](.github/ISSUE_TEMPLATE/bug_report.md) or [feature](.github/ISSUE_TEMPLATE/feature_request.md) template.
-No public repository URL is configured yet; no fictional owner/repo link is supplied. Use private channels for sensitive vulnerability reports.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Use the authorized private repository’s [Issues](https://github.com/griffinmx/VPSMaster/issues) → New issue tab with the bundled [bug](.github/ISSUE_TEMPLATE/bug_report.md) or [feature](.github/ISSUE_TEMPLATE/feature_request.md) template.
+The repository is Private; public access needs owner approval. Use private channels for sensitive vulnerability reports.
 
 MIT project; former-brand contributor notices remain in [LICENSE](LICENSE).
 No third-party traceroute clients, databases or remote test scripts are bundled/executed. References/attribution are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [OPEN_SOURCE_REFERENCES.md](OPEN_SOURCE_REFERENCES.md).
