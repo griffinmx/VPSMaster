@@ -121,7 +121,10 @@ def _main():
     media.add_argument('--lang',choices=('zh','en'),default=lang)
     media.add_argument('--color',choices=('auto','always','never'),default='auto')
     media.add_argument('--json-output',type=Path,help=st('保存脱敏检测依据，不覆盖文件','Save redacted evidence; never overwrite'))
-    suite = sub.add_parser('suite',lang=lang,help=st('VPS / 网络质量 / 路由 / 流媒体','VPS / network / routes / streaming'))
+    suite = sub.add_parser('suite',aliases=['all'],lang=lang,help=st('一键综合检测：all（suite 兼容入口）','One-command diagnostics: all (suite compatible)'))
+    suite.add_argument('--full',action='store_true',help=st('all 扩展模式；带宽仍需独立授权','Extended all mode; bandwidth still requires consent'))
+    suite.add_argument('--total-timeout',type=int,choices=range(30,901),metavar='30..900',help=st('all 总秒数预算，默认300/full600','all total seconds; default 300/full600'))
+    suite.add_argument('--module-timeout',type=int,choices=range(5,121),default=60,metavar='5..120',help=st('all 每模块秒数预算，默认60','all per-module seconds, default 60'))
     suite.add_argument('--lang',choices=('zh','en'),default=lang)
     suite.add_argument('--allow-bandwidth',action='store_true',help=st('明确允许带宽测速（默认跳过）','Consent to bandwidth tests (skipped by default)'))
     suite.add_argument('--offline',action='store_true',help=st('跳过联网检测','Skip outbound requests'))
@@ -142,6 +145,7 @@ def _main():
     suite.add_argument('--no-geo',action='store_true',help=st('不查询路由 IP 位置','Skip route IP geolocation lookups'))
     suite.add_argument('--color',choices=('auto','always','never'),default='auto')
     suite.add_argument('--theme', choices=('default','iprisk','framed'), default='default', help=st('终端版式：default/iprisk/framed','Terminal theme: default/iprisk/framed'))
+    suite.add_argument('--show-unavailable', action='store_true', help=st('显示无数据与跳过的条目（完整报告始终保留）','Show unavailable/skipped rows (always retained in reports)'))
     suite.add_argument('--route-method',choices=('udp','icmp','tcp'),default='udp')
     suite.add_argument('--tcp-port',type=int,default=443)
     suite.add_argument('--china-speed',action='store_true',help=st('启用大陆三运营商候选测速；仍需 --allow-bandwidth','Select mainland carrier speed candidates; requires --allow-bandwidth'))
@@ -258,7 +262,17 @@ def _main():
             incomplete=any(item.get('state')!='reachable' for item in scan.report['media'].values())
             if incomplete:scan.report['result']='incomplete'
         sys.exit(1 if incomplete or scan.failed else 0)
-    if args.command == 'suite':
+    if args.command in ('suite','all'):
+        is_all=args.command=='all'
+        if args.full and not is_all:parser.error('--full requires all')
+        if is_all and args.allow_bandwidth and not args.full:parser.error('all bandwidth requires --full --allow-bandwidth')
+        if is_all and args.full:
+            args.mail_probes=True
+            args.include_return_routes=True
+        if is_all and args.allow_bandwidth:
+            selected=args.bandwidth_source or (CHINA_SOURCES if args.china_speed else ('cloudflare','ovh'))
+            if args.sample_mib*args.bandwidth_rounds*len(set(selected))*2>64:
+                parser.error('all bandwidth payload budget is at most 64 MiB; reduce sources/sample size/rounds')
         if not 1<=args.tcp_port<=65535:parser.error(t('端口必须在 1～65535 之间'))
         if args.china_speed and not args.allow_bandwidth:
             parser.error(st('--china-speed 需要 --allow-bandwidth','--china-speed requires --allow-bandwidth'))
@@ -279,7 +293,8 @@ def _main():
                            max_hops=args.max_hops,geo=not args.no_geo,color=args.color,
                            bandwidth_rounds=args.bandwidth_rounds,skip_route=args.skip_route,json_output=args.json_output,
                            bandwidth_sources=args.bandwidth_source or (CHINA_SOURCES if args.china_speed else None),port=args.port,show_ip=args.show_ip,ip_enrichment=not args.no_ip_enrichment,allow_bandwidth=args.allow_bandwidth,mail_probes=args.mail_probes,route_probes=args.route_probes,theme=args.theme,
-                           route_method=args.route_method,tcp_port=args.tcp_port,include_return_routes=args.include_return_routes,include_bgp=args.include_bgp)
+                           route_method='udp' if is_all else args.route_method,tcp_port=args.tcp_port,include_return_routes=args.include_return_routes,include_bgp=args.include_bgp or is_all,show_unavailable=args.show_unavailable,
+                           comprehensive=is_all,total_timeout=args.total_timeout or (600 if args.full else 300),module_timeout=args.module_timeout)
         except OSError:
             parser.error(st('无法保存报告，请检查输出目录和文件权限','Unable to save report; check the output directory and file permissions'))
         sys.exit(code)

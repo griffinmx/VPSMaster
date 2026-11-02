@@ -1,36 +1,58 @@
+> 历史材料：版本、测试数量与旧路径仅说明当时状态，不是本次构建的验收证据。参见[当前发行说明](../release/RELEASE_NOTES.md)。
+
+## 1.0 公测待验收
+
+当前包的 Ubuntu 安装、ICMP/TCP、三网有效下载、BGP 实网及海外三城回程均留待下一轮；本轮开发机 271 通过、1 跳过。旧 Alpha 验证仅为历史。具体步骤范围见 PUBLIC_BETA_CHANGE_REPORT.md。
+
 
 ## v0.1.0-alpha 候选（2026-11-01）
 
 隔离离线安装、完整性拒绝、网络worker超时/取消、统一结果schema、独立模块增量保存、路由重复探测统计已实现；两版Ubuntu各248自动测试/23实际验收。全新OS镜像尚缺，建议内部试用、暂缓公开。详情见ALPHA_RELEASE_REPORT.md。无主分支合并。
 
-# 架构与接口演进
 
-2026-11-01。当前范围是独立 Python CLI，未来 FlexMaster 通过 Python API 复用。以下区分现状与方案，方案尚未视为实现。
+## 报告与IP质量更新（2026-11-01）
 
-## 现状
+- 新增离线 `report` 命令：JSON→中英文Markdown，保留指标、来源、未知和跳过原因；输出独占创建，HTML/Markdown注入内容转义。
+- 新增 `recover` 命令：恢复日志最后完整快照→JSON/Markdown；未完成运行标为recovered_partial，明确不是新检测。输入有读取预算。
+- 分享副本增加敏感键、Bearer凭证、URL用户信息/查询参数脱敏；仍需人工复核，不保证任意文本完全匿名。
+- 新增IP概览面板，CJK对齐与长行换行；多来源类型/代理/VPN/Tor证据放在下面，不合成纯净度评分。
+- 新增可选 `--mail-probes`：PTR/正向一致性、单目标出站TCP25，默认不启用，不发送邮件。DNSBL明确未查询；IPMap尚未接入。
+- 实际阅读xykt/IPQuality源码与AGPL许可，只参考需求与组织，未复制实现，详见IPQUALITY_COVERAGE.md。
+- 报告/恢复/PTR实网版本两版Ubuntu均237测试通过；最终面板加入后，两版完整离线回归均239测试通过（22：4.04秒；24：4.49秒）。报告导出、恢复JSON/Markdown、中英文离线真实CLI均退出0。IP数据不完整时退出1符合预期。
+- 实网：22的单目标出站TCP25可连接，24未确认；两台PTR未取得有效结果，不能据此判断邮件信誉。无付费API、系统依赖安装或完整报告上传。
 
-- `checks.py`：Host 只读适配器、Result、inspect；返回 schema_version=1 字典。
-- `suite.py`：四模块编排、终端渲染和 schema_version=2 报告，当前相互耦合。
-- `routes.py`：Linux UDP 错误队列路由，emit 回调和 records 可供调用；非通用跨平台实现。
-- `quality.py`、`media.py`、`ipquality.py`、`bandwidth.py`：可调用函数，但部分收集函数同时输出终端。
-- `net.py`：有限响应、请求超时；`console.py`：颜色和控制字符过滤；`cli.py`：参数、脱敏和保存。
-- 无运行依赖，Python >=3.10；setuptools>=77 是构建依赖，尚无上限锁定。
+证据：工作区outputs/ReportIP22-*、ReportIP24-*（真实导出/探测），PanelFinal22-pytest.txt / PanelFinal24-pytest.txt（最终239测试）。此前223测试记录属于前版，不覆盖所有新增功能。
 
-## 渐进方案（待实现）
 
-保留文件和现有接口，先增加独立 core/models、core/runner、reports 组件，再逐模块适配。不要一次移动所有代码。
+## 最新双机验收（2026-11-01）
 
-统一 EvidenceResult：schema_version、check_id、status、observed_at、method、source、metrics（数值+单位）、error_code、confidence、limitations。状态为 success/failure/skipped/unsupported/unknown。failure 表示检查失败，不等于确认存在漏洞。媒体业务状态保留独立字段，不把 catalog_visible 映射为播放成功。旧 pass/warn 不可机械映射为网络成功/失败。
+同版代码已在Ubuntu22.04.5/Python3.10.12和Ubuntu24.04.3/Python3.12.3分别完成223项测试、17/17实际CLI验收。中文/英文离线、Ctrl+C保存、恢复和防覆盖通过；两台实网检测均完整执行但存在目标TCP/IPv6/媒体未确认项，不能说网络全部通过。22.04初次验收脚本内存预期错误，按VirtualBox独立配置修正后复测通过。完整范围及原始证据见工作区outputs/双虚拟机-当前版本验收报告.md。此前未测试段落属于编写时状态，最新以本节为准。测试通过不表示全部101项需求完成。
 
-Runner 接受显式配置和 provider 注入；每模块独立捕获预期错误，未知异常仅记录固定错误码，不保存异常原文中的凭证。KeyboardInterrupt 传给协调器，落盘已有结果再退出 130。同步阶段先使用明确请求预算；不可通过线程超时假装终止底层网络操作。
 
-Reports 接收结构化对象，不解析 CLI 文本。增量 JSONL 保存完成事件，最终报告独占创建、默认脱敏；禁止覆盖已有文件或通过符号链接写入。持久化失败应保留可用终端结果并返回明确错误。历史比较只比较相同方法、单位、节点及采样参数；用户购买规格单独存为 user_claim，不能当实测。
+## Ubuntu 24.04 实测更新（2026-11-01）
 
-## 安全配置
+当前分支在Ubuntu24.04.3/Python3.12.3完成223项测试、17/17实际CLI验收。
+中英文离线、默认测速拦截、Ctrl+C保存和防覆盖通过；网络实测正常执行但结果incomplete。
+DNS有结果，固定IPv4 TCP超时、IPv6不可达、TLS跳过；30跳路由未到达目标，媒体多数未知。
+综合报告schema版本升为3。此前“尚未测试”的段落是编写时记录；最新验证以本节为准。
+完整日志/范围见工作区outputs/Current24-验收报告.md。Ubuntu22新版、真实VPS及未实现项目仍待验收。
 
-常规 suite 不跑 CPU 或磁盘基准；测速需 allow_bandwidth=True / CLI --allow-bandwidth。该标志仅授权当前调用，不是永久授权。当前预算沿用 bandwidth.payload_budget，属于 HTTP 载荷预算，不能宣称为链路计费硬上限。CPU/磁盘基准后续单独命令、确认和上限。常规联网仍会向目标及 API 暴露请求来源；--offline 跳过联网。
+# 测试与验收计划
 
-第三方可执行文件入口当前暂停；恢复前必须审查版本、许可、网络上传和资源消耗，不自动下载或提权。未来 FlexMaster 默认同样应用安全策略。暂不承诺稳定 API/Schema 兼容性；新格式须先有版本及迁移文档。
+本轮按用户指示暂不运行测试，所有新修改标记“未验证”。历史 0.5.0 记录位于工作区 outputs，不能直接用于本分支验收。
+
+| 批次 | 必须验证的行为 | 方法和环境 | 当前证据 |
+|---|---|---|---|
+| P0 默认安全 | suite 默认不调用 hashlib 基准/measure_bandwidth；离线零外网；bandwidth 无许可拒绝；许可后预算显示；所有第三方包装入口拒绝 | Mock 调用计数、CLI 子进程、中文/英文；普通用户 | 新源码，未运行 |
+| P0 安全持久化 | 每模块异常继续下一模块；Ctrl+C 保留事件；权限不足/磁盘满/中断/符号链接/已有文件均不覆盖 | 临时目录与故障注入；已有 suite 回归适配 | 尚未实现 |
+| P1 资源 | cgroup v1/v2 嵌套配额/无限/缺文件；Swap/PSI/steal 采样；购买规格与实测分离 | 固定 fixture + Ubuntu 22.04 Server/24.04 Desktop | 待开发和验证 |
+| P1 网络 | 分 IPv4/IPv6，DNS 超时/拒绝/无记录，TCP/TLS/UDP 限时，NAT/多网卡，不将失败归因唯一 | Mock + 回环服务 + VM | 部分旧测试待复核 |
+| P2 路由 | 1..64 跳、v4/v6、目标不回应、中间超时不算端到端丢包、ASN 冲突、方向标记 | 固定报文 fixture + VM + 获授权公网节点 | UDP 旧用例存在，新验收待补 |
+| P2 IP/媒体 | 403/429/200登录/地区禁止/有效元数据/证据冲突；时间和来源；无密钥/错误密钥；不下载受保护内容 | 离线 fixture，必要时有限实网 | 旧用例存在；新规则不宣称验证 |
+| P3 基准监测 | 磁盘限额与清理、无裸盘写、进程超时、24/48h 中断恢复和时区、流量预算 | 先 Mock 后专用 VM，真实 VPS 须另授权 | 尚未实现 |
+| P3 发布集成 | 干净 venv 安装/更新/卸载/离线、Schema 兼容、Python API 不依赖 CLI 文本、许可清单 | Ubuntu 双版本和 CI；ARM/真实 VPS 独立记录 | 待验证 |
+
+每次执行记录 commit、日期、Python/OS/架构、命令、退出码、通过/失败/跳过数、脱敏日志和限制。未知不能算通过；缺海外 VPS 或 API 条件记为待实机验证。无生产测试、无付费 API、无完整报告上传、无系统依赖安装。旧测试如果断言自动测速，应改为显式传 allow_bandwidth=True，再新增默认不测速的独立断言。
 
 
 ## Reliability batch — 2026-11-01 (implemented, untested)

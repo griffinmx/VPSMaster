@@ -15,7 +15,7 @@
 - Sharing redacts known patterns, not arbitrary text. Review exports; raw journals,
   inventories, credentials, snapshots and backups must remain private.
 - Reports do not expire automatically. Third-party data retention/sharing terms
-  remain applicable; see docs/DATA_SERVICES.md, including IP2Location cache limits.
+  remain applicable; see [data-service terms](../guide/DATA_SERVICES.md), including IP2Location cache limits.
 - The manifest detects file changes, not publisher authenticity. Verify the ZIP
   digest through a trusted independent channel before installation.
 - Media checks cover public-page reachability only, not unlock or paid playback.

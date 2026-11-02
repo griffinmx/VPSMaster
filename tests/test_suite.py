@@ -27,7 +27,7 @@ def test_offline_suite_never_calls_network_or_providers(monkeypatch,capsys):
     monkeypatch.setattr(suite,'execute_provider',unexpected)
     monkeypatch.setattr(suite,'native_trace',unexpected)
     import platform
-    assert suite.run_suite(offline=True)==(0 if platform.system()=='Linux' else 1)
+    assert suite.run_suite(offline=True,show_unavailable=True)==(0 if platform.system()=='Linux' else 1)
     text=capsys.readouterr().out
     assert all(f'===== {number}.' in text for number in range(1,5))
 

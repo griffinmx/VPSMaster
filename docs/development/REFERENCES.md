@@ -2,7 +2,7 @@
 
 The independently implemented stdlib runtime has no third-party Python dependency.
 No new third-party code, database or binary was copied during final hardening.
-Full references and retained MIT notices: THIRD_PARTY_NOTICES.md.
+Full references and retained MIT notices: [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md).
 
 Reviewed 2026-11-01:
 

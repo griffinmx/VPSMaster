@@ -1,4 +1,4 @@
-> 历史记录 / Historical record：ProxyDoctor 是项目旧名。以下旧版本、SHA256、测试数量与路径保留原样，不代表 VPSMaster 新构建已通过；当前范围见 README.md、CURRENT_STATUS.md 和新包同 SHA256 验收报告。
+> 历史材料：版本、测试数量与旧路径仅说明当时状态，不是本次构建的验收证据。参见[当前发行说明](../release/RELEASE_NOTES.md)。
 
 # 当前状态：1.0 公测候选，非最终版本
 
@@ -13,4 +13,4 @@
 
 96 项表和 Alpha 文档保留历史；本轮没有根据代码接入或测试数量批量打勾。
 03-01/03-06/03-07/06-01 等仍不能标为全部完成。没有全国完整三网、双向探针、长期监测或 Web UI。
-详见 [README](README.md) 和 [本轮变更与待测项](PUBLIC_BETA_CHANGE_REPORT.md)。
+详见 [README](../README.md) 和 [本轮变更与待测项](PUBLIC_BETA_CHANGE_REPORT.md)。

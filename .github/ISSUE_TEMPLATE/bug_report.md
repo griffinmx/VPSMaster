@@ -16,4 +16,4 @@ labels: bug
 ## Steps and redacted evidence / 复现步骤与脱敏证据
 
 Do not attach passwords, keys, subscriptions, raw journals or full system inventories.
-Unknown/provider-limited results are not automatically bugs. For sensitive vulnerabilities use the private route in SECURITY.md.
+Unknown/provider-limited results are not automatically bugs. For sensitive vulnerabilities use the private route in [the security policy](../SECURITY.md).

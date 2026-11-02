@@ -106,7 +106,7 @@ def test_suite_includes_security_network_and_route_evidence(monkeypatch,tmp_path
     def trace(*args,**kwargs):kwargs['records'].append({'hop':1,'ip':'8.8.8.8','latency_ms':2});return 0
     monkeypatch.setattr(suite,'native_trace',trace)
     path=tmp_path/'suite.json'
-    assert suite.run_suite(lang='en',port=2222,json_output=path)==1
+    assert suite.run_suite(lang='en',port=2222,json_output=path,show_unavailable=True)==1
     result=json.loads(path.read_text(encoding='utf-8'))
     output=capsys.readouterr().out
     assert 'SSH port guard' in output and 'Local port 2222' in output

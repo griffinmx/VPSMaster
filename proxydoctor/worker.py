@@ -83,6 +83,9 @@ def invoke(action,options,timeout=20):
             except KeyboardInterrupt:
                 cancel_all();process.communicate()
                 raise
+            except BaseException:
+                process.kill();process.communicate()
+                raise
             finally:
                 with _lock:_active.discard(process)
             if process.returncode or len(output)>2*1024**2:
